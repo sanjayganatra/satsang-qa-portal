@@ -194,6 +194,28 @@ SLICER_STOPWORDS = {
     "want", "show", "everything", "full"
 }
 
+# Common Hindi stopwords to ignore in slicers
+HI_STOPWORDS = {
+    "के", "का", "एक", "में", "की", "है", "यह", "और", "से", "हैं", "को", "पर", "इस", "होता", "कि", "जो",
+    "कर", "मे", "गया", "करने", "किया", "लिये", "अपने", "ने", "बनी", "नहीं", "तो", "ही", "या", "एवं", "दिया",
+    "हो", "इसका", "था", "द्वारा", "हुआ", "तक", "साथ", "करना", "वाले", "बाद", "लिए", "आप", "कुछ", "सकते",
+    "किसी", "ये", "इसके", "सबसे", "इसमें", "थे", "दो", "मगर", "वह", "भी", "सकता", "हर", "जाने", "अपना",
+    "वे", "जिसे", "गई", "ऐसे", "जिसके", "लिए", "जाता", "बहुत", "कहा", "वर्ग", "कई", "करें", "होती", "वाले",
+    "कम", "से", "थी", "हुई", "जा", "न", "जिस", "किस", "तथा", "हूँ", "मै", "मैं", "मेरा", "मेरी", "मेरे",
+    "मुझे", "हम", "हमारा", "हमारे", "हमें", "तुम", "तुम्हारा", "तुम्हारे", "तुम्हें", "आपका", "आपकी", "आपके",
+    "क्या", "क्यों", "कैसे", "कब", "कहाँ", "कौन", "जी", "साहब", "सर", "श्री", "श्रीमती", "कुमार", "कुमारी",
+    "सवाल", "प्रश्न", "उत्तर", "जवाब", "चाहिए", "चाहता", "चाहती", "चाहते", "रहा", "रही", "रहे",
+    "बारे", "पास", "दूर", "सब", "सभी", "सारा", "पूरी", "पूरा",
+    # Specific removals requested
+    "जैसे", "बाबा", "राधे", "श्याम", "राधेश्याम", "कोई", "कृपया",
+    "मिल", "करते", "कल", "बताया", "लेना", "समय", "उसमें", "जय", "भगवान", "देव",
+    "गुरु",
+    # Additional removals
+    "कृपा", "मार्गदर्शन", "jae", "जाए", "जाएं", "वो", "करे", "करें", "कभी", "अगर",
+    "उसके", "उसकी", "उसे", "उनका", "उनकी", "उनके", "उन्हें",
+    "यहाँ", "वहाँ", "जहां", "अब", "जब", "तब"
+}
+
 # ============================================================
 # 2A) SYNONYM EXPANSION (COMMON SCENARIOS)
 # ============================================================
@@ -410,6 +432,43 @@ def extract_top_keywords(df: pd.DataFrame, col: str, top_n: int = 30) -> list[st
                 continue
             if t in SLICER_STOPWORDS:
                 continue
+            freq[t] = freq.get(t, 0) + 1
+
+    ranked = sorted(freq.items(), key=lambda x: (-x[1], x[0]))
+    return [k for k, _ in ranked[:top_n]]
+
+def extract_hindi_keywords(df: pd.DataFrame, top_n: int = 30) -> list[str]:
+    """
+    Extract useful Hindi keywords for slicers.
+    Rules:
+    - Tokenize using whitespace
+    - Remove HI_STOPWORDS
+    - Min length 2
+    - Frequency ranking
+    """
+    freq = {}
+    # Use "Question" column for source
+    series = df["Question"].fillna("").astype(str)
+
+    for text in series:
+        # Simple split by whitespace
+        # (For better Devanagari tokenization, we can use clean_for_search first)
+        text = clean_for_search(text)
+        tokens = text.split()
+
+        for t in tokens:
+            # Check if likely Devanagari
+            if not any("\u0900" <= ch <= "\u097F" for ch in t):
+                continue
+            
+            # Stopword filter
+            if t in HI_STOPWORDS:
+                continue
+            
+            # Length filter
+            if len(t) < 2:
+                continue
+                
             freq[t] = freq.get(t, 0) + 1
 
     ranked = sorted(freq.items(), key=lambda x: (-x[1], x[0]))
@@ -757,7 +816,7 @@ with c_lang:
     view_lang = st.radio("View Language", ["Hindi", "English"], horizontal=True, label_visibility="collapsed")
 
 st.sidebar.header("Settings")
-page_size = st.sidebar.selectbox("Results per page", [5, 10, 20, 50], index=0)
+# page_size moved to main area
 if "page" not in st.session_state:
     st.session_state["page"] = 1
 
@@ -785,7 +844,6 @@ HIGH_SEM_OVERRIDE = st.sidebar.slider("Short-query semantic override threshold",
 
 enable_translation_bridge = st.sidebar.checkbox("Translate English query to Hindi for search", value=True)
 
-show_translated_answer = st.sidebar.checkbox("Show Translated Answer", value=False)
 debug_mode = st.sidebar.checkbox("Show Debug Info", value=False)
 
 # Load data
@@ -806,8 +864,15 @@ if model_error:
     st.stop()
 
 # --- SLICERS (PowerBI-like) ---
-kw_col = pick_english_source_column(df)
-keywords = extract_top_keywords(df, kw_col, top_n=30) if kw_col else []
+# Determine keywords based on selected view language
+if view_lang == "English":
+    kw_col = pick_english_source_column(df)
+    keywords = extract_top_keywords(df, kw_col, top_n=30) if kw_col else []
+    slicer_label = "Quick Filters (English Keywords)"
+else:
+    # Hindi keywords
+    keywords = extract_hindi_keywords(df, top_n=30)
+    slicer_label = "Quick Filters (Hindi Keywords)"
 
 # Session keys used for auto-search
 if "query" not in st.session_state:
@@ -816,17 +881,19 @@ if "trigger_search" not in st.session_state:
     st.session_state["trigger_search"] = False
 
 if keywords:
-    with st.expander("Quick Filters (English Keywords)", expanded=False):
+    with st.expander(slicer_label, expanded=False):
         # Render chips in columns to simulate horizontal slicers
         # (Streamlit does not have native PowerBI slicers; this is the closest UX.)
-        chip_cols = st.columns(6)  # tune 5–8 depending on your layout
+        # Mobile-friendly: fewer columns on small screens? Streamlit handles wrapping.
+        chip_cols = st.columns(6)
         for i, kw in enumerate(keywords):  # show all keywords inside expander
             with chip_cols[i % 6]:
                 if st.button(kw, key=f"kw_{i}_{kw}", use_container_width=True):
                     st.session_state["query"] = kw
                     st.session_state["trigger_search"] = True
 else:
-    st.caption("No English keyword column found for slicers. Add a column named 'English Text' (recommended).")
+    if view_lang == "English":
+        st.caption("No English keyword column found for slicers.")
 
 query = st.text_input("Ask a question:", placeholder="e.g., I am Sick / छीन लेना / नाम जप नहीं हो रहा", key="query"
 )
@@ -835,11 +902,13 @@ query = st.text_input("Ask a question:", placeholder="e.g., I am Sick / छी�
 # ============================================================
 # 7) SEARCH
 # ============================================================
-c_search, c_browse = st.columns([4, 1])
+c_search, c_browse, c_size = st.columns([3, 1, 1])
 with c_search:
     search_clicked = st.button("Search", type="primary", use_container_width=True)
 with c_browse:
     browse_clicked = st.button("Browse All", use_container_width=True)
+with c_size:
+    page_size = st.selectbox("Page Size", [5, 10, 20, 50], index=0, label_visibility="collapsed")
 
 auto_clicked = st.session_state.get("trigger_search", False)
 
@@ -1024,7 +1093,8 @@ else:
     
     for relative_idx, (i, final, sem, lex, method) in enumerate(page_slice):
         row = df.iloc[i]
-        render_result_card(start_num + relative_idx, row, final, sem, lex, method, show_translated_answer, debug_mode, view_lang)
+    # Pass show_translated_answer=False since we removed the checkbox
+        render_result_card(start_num + relative_idx, row, final, sem, lex, method, False, debug_mode, view_lang)
 
     # Controls row
     st.markdown("---")
