@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Satsang Summary - 05-12-2025</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&family=Yatra+One&display=swap');
+        
+        /* Variables */
+        :root { --primary-color: #FF9933; --secondary-color: #8B0000; --bg-color: #FFF5E1; --text-color: #333; --card-bg: #ffffff; }
+        
+        /* PRINT SETTINGS */
+        @media print {
+            body { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+            header { background: linear-gradient(135deg, var(--primary-color), var(--secondary-color)) !important; }
+            .yt-link, .main-yt-btn { background-color: #ffebee !important; }
+            .card { break-inside: avoid; border: 1px solid #ddd; box-shadow: none !important; }
+            .disclaimer-box { background-color: #fff8e1 !important; border: 2px solid #FF9933 !important; }
+        }
+
+        /* --- BASE STYLES (Mobile First) --- */
+        body { font-family: 'Poppins', sans-serif; background-color: var(--bg-color); margin: 0; padding: 15px; color: var(--text-color); }
+        .container { max-width: 900px; margin: 0 auto; }
+        
+        /* Header */
+        header { 
+            text-align: center; 
+            padding: 20px 15px; 
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color)); 
+            color: white; 
+            border-radius: 15px; 
+            margin-bottom: 25px; 
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2); 
+            position: relative; 
+        }
+        
+        /* Typography responsive scaling */
+        h1 { font-family: 'Yatra One', cursive; font-size: 1.6em; margin: 15px 0 0 0; line-height: 1.3; }
+        .subtitle { font-size: 1em; margin-top: 8px; opacity: 0.9; }
+        .date { font-size: 0.9em; margin-top: 5px; font-weight: 600; opacity: 0.8; }
+        
+        /* Image */
+        .baba-image {
+            width: 100%;
+            max-width: 650px;
+            height: auto;
+            aspect-ratio: 16 / 9;
+            border-radius: 12px;
+            border: 3px solid rgba(255, 255, 255, 0.5);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            margin: 10px auto;
+            display: block;
+        }
+
+        /* Card Styles */
+        .card { 
+            background: var(--card-bg); 
+            border-radius: 12px; 
+            padding: 20px; 
+            margin-bottom: 20px; 
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1); 
+            border-left: 5px solid var(--primary-color); 
+        }
+        
+        h2 { 
+            color: var(--secondary-color); 
+            font-family: 'Yatra One', cursive; 
+            margin-top: 0; 
+            display: flex; 
+            align-items: center; 
+            justify-content: space-between; 
+            font-size: 1.3em; 
+            flex-wrap: wrap; 
+            gap: 10px; 
+            margin-bottom: 10px;
+        }
+        
+        .icon { font-size: 1.3em; margin-right: 10px; background: #ffe0b2; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; border-radius: 50%; flex-shrink: 0; }
+        
+        /* Buttons */
+        .yt-link { 
+            display: inline-flex; 
+            align-items: center; 
+            justify-content: center; 
+            color: #d32f2f; 
+            text-decoration: none; 
+            background: #ffebee; 
+            padding: 6px 14px; 
+            border-radius: 20px; 
+            font-family: 'Poppins', sans-serif; 
+            font-size: 0.75em; 
+            font-weight: 600; 
+            border: 1px solid #ffcdd2;
+            white-space: nowrap;
+        }
+        
+        .main-yt-btn { 
+            display: inline-flex; 
+            align-items: center; 
+            justify-content: center;
+            background-color: #FF0000; 
+            color: white; 
+            padding: 12px 20px; 
+            border-radius: 50px; 
+            text-decoration: none; 
+            font-weight: 600; 
+            margin-top: 20px; 
+            font-size: 0.9em; 
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2); 
+            border: 2px solid white; 
+            width: 80%; 
+            max-width: 300px;
+        }
+
+        /* Grids */
+        .grid-2 { display: grid; grid-template-columns: 1fr; gap: 20px; }
+        .diet-grid { display: grid; grid-template-columns: 1fr; gap: 10px; margin-top: 15px; }
+
+        .diet-box { padding: 12px; border-radius: 8px; text-align: center; font-size: 0.9em; display: flex; flex-direction: column; }
+        .sattvic { background-color: #e8f5e9; border: 1px solid #c8e6c9; }
+        .rajasic { background-color: #fff3e0; border: 1px solid #ffe0b2; }
+        .tamasic { background-color: #ffebee; border: 1px solid #ffcdd2; }
+        
+        .qa-box { background: #fffcf5; padding: 15px; border-radius: 8px; margin-top: 15px; border-left: 4px solid var(--secondary-color); }
+        .qa-q { font-weight: bold; color: var(--secondary-color); margin-bottom: 5px; display: block; }
+        .quote-box { background-color: var(--secondary-color); color: white; padding: 20px; border-radius: 12px; text-align: center; margin-top: 30px; font-style: italic; }
+        .footer { text-align: center; margin-top: 30px; color: #666; font-size: 0.8em; padding-bottom: 40px; }
+        
+        /* HIGHLIGHTED DISCLAIMER BOX */
+        .disclaimer-box { 
+            margin-top: 30px; 
+            padding: 20px; 
+            background-color: #fff8e1; /* Yellow/Gold Hint */
+            border: 2px solid var(--primary-color); 
+            border-radius: 12px; 
+            font-size: 0.9em; 
+            color: #4e342e; 
+            text-align: center; 
+            line-height: 1.6;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.08);
+        }
+
+        /* --- DESKTOP/TABLET OVERRIDES --- */
+        @media (min-width: 768px) {
+            body { padding: 20px; }
+            header { padding: 30px 20px; }
+            h1 { font-size: 2.2em; }
+            .subtitle { font-size: 1.1em; }
+            .card { padding: 25px; }
+            h2 { font-size: 1.5em; }
+            .icon { width: 45px; height: 45px; font-size: 1.5em; margin-right: 15px; }
+            .grid-2 { grid-template-columns: 1fr 1fr; gap: 25px; }
+            .diet-grid { grid-template-columns: 1fr 1fr 1fr; gap: 15px; }
+            .main-yt-btn { width: auto; }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <header>
+        <div style="background: rgba(255, 255, 255, 0.15); border: 1px solid rgba(255, 255, 255, 0.3); padding: 8px 15px; border-radius: 12px; margin-bottom: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); backdrop-filter: blur(5px); display: inline-block;">
+            <div style="font-family: 'Yatra One', cursive; font-size: 1.4em; text-shadow: 2px 2px 4px rgba(0,0,0,0.2);">श्री भगवत चर्चा</div>
+        </div>
+        
+        <img src="https://img.youtube.com/vi/qgQxlyh003o/maxresdefault.jpg" alt="Sri Vinod Baba Ji" class="baba-image">
+        
+        <h1>श्री श्री 108 श्री विनोद बाबाजी महाराज की अमृत वाणी</h1>
+        <div class="subtitle">विषय : गृहस्थ में भजन, विवाह और सच्चा वैराग्य</div>
+        <div class="date">05-12-2025</div>
+        <a href="https://www.youtube.com/watch?v=qgQxlyh003o" target="_blank" class="main-yt-btn">
+            <svg class="yt-icon-svg" style="width: 24px; height: 24px; margin-right: 8px;" viewBox="0 0 24 24"><path d="M10 15l5.19-3L10 9v6zm11.56-7.83c.13.47.22 1.1.28 1.9.07.8.1 1.49.1 2.09L22 12c0 2.19-.16 3.8-.44 4.83-.25.9-.83 1.48-1.73 1.73-.47.13-1.33.22-2.65.28-1.3.07-2.49.1-3.59.1L12 19c-4.19 0-6.8-.16-7.83-.44-.9-.25-1.48-.83-1.73-1.73-.13-.47-.22-1.1-.28-1.9-.07-.8-.1-1.49-.1-2.09L2 12c0-2.19.16-3.8.44-4.83.25-.9.83-1.48 1.73-1.73.47-.13 1.33-.22 2.65-.28 1.3-.07 2.49-.1 3.59-.1L12 5c4.19 0 6.8.16 7.83.44.9.25 1.48.83 1.73 1.73z"/></svg>
+            पूरा सत्संग देखें
+        </a>
+    </header>
+
+    <div class="grid-2">
+        <div class="card">
+            <h2>
+                <div style="display:flex; align-items:center;"><span class="icon">🏰</span>घर: एक सुरक्षित किला</div>
+                <a href="https://youtu.be/qgQxlyh003o?t=270" target="_blank" class="yt-link">Watch ▶</a>
+            </h2>
+            <p>घर छोड़ने मात्र से लाभ नहीं होता। घर एक 'किले' के समान है जहाँ रहकर माया रूपी शत्रु से सुरक्षित लड़ाई लड़ी जा सकती है। इंद्रियों को संयमित करने के लिए घर में रहना ही श्रेष्ठ है।</p>
+        </div>
+
+        <div class="card">
+            <h2>
+                <div style="display:flex; align-items:center;"><span class="icon">🍂</span>सच्चा वैराग्य</div>
+                <a href="https://youtu.be/qgQxlyh003o?t=366" target="_blank" class="yt-link">Watch ▶</a>
+            </h2>
+            <p>वैराग्य का अर्थ वस्तुओं को छोड़ना नहीं, बल्कि मन से 'स्पृहा' (भोगों की इच्छा) का समाप्त होना है। वैराग्य 'अनुराग' (भगवत प्रेम) से उत्पन्न होता है। जब तक भीतर से आसक्ति नहीं जाती, बाहरी त्याग व्यर्थ है।</p>
+        </div>
+
+        <div class="card">
+            <h2>
+                <div style="display:flex; align-items:center;"><span class="icon">👫</span>साधक और विवाह</div>
+                <a href="https://youtu.be/qgQxlyh003o?t=762" target="_blank" class="yt-link">Watch ▶</a>
+            </h2>
+            <p>विवाह एक 'दुर्भेद ग्रंथि' है। यदि जीवनसाथी भक्ति में अनुकूल न मिले, तो जीवन और भजन दोनों संकट में पड़ सकते हैं। यह मार्ग बहुत जोखिम भरा है, इसलिए साधक को बहुत सावधानी से निर्णय लेना चाहिए।</p>
+        </div>
+
+        <div class="card">
+            <h2>
+                <div style="display:flex; align-items:center;"><span class="icon">🕯️</span>पाप और प्रायश्चित</div>
+                <a href="https://youtu.be/qgQxlyh003o?t=1020" target="_blank" class="yt-link">Watch ▶</a>
+            </h2>
+            <p>आत्मा सदैव निर्दोष है। जैसे पलक झपकते ही रोशनी युगों के अंधकार को मिटा देती है, वैसे ही भगवत कृपा पूर्व जन्मों के संस्कारों और पापों को क्षण भर में नष्ट कर देती है। घबराने की आवश्यकता नहीं है।</p>
+        </div>
+
+        <div class="card">
+            <h2>
+                <div style="display:flex; align-items:center;"><span class="icon">🤫</span>गुप्त भजन की युक्ति</div>
+                <a href="https://youtu.be/qgQxlyh003o?t=2040" target="_blank" class="yt-link">Watch ▶</a>
+            </h2>
+            <p>यदि घर में भजन में बाधा आए, तो युक्ति (नाटक) करें। बीमारी का बहाना बनाकर दरवाजा बंद करें और एकांत में भजन करें। निद्रा घटाकर ब्रह्म मुहूर्त (सुबह 3 बजे) में उठकर नाम जप करें।</p>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2><div style="display:flex; align-items:center;"><span class="icon">❓</span>जिज्ञासा समाधान</div></h2>
+        
+        <div class="qa-box">
+            <span class="qa-q">प्रश्न: क्या भगवत प्राप्ति के लिए घर-परिवार छोड़ना आवश्यक है?</span>
+            उत्तर: नहीं, जंगल जाने से मुक्ति नहीं मिलती। घर बंधन का कारण नहीं है, हमारी 'वासना' ही बंधन है। घर में रहकर भी अनुशासित जीवन जीकर संत बना जा सकता है।
+        </div>
+        
+        <div class="qa-box">
+            <span class="qa-q">प्रश्न: नवीन साधक को विवाह करना चाहिए या नहीं?</span>
+            उत्तर: महाराज जी के अनुसार यह एक कठिन निर्णय है। गलत जीवनसाथी मिलने पर भजन मार्ग अवरुद्ध हो सकता है, अतः यह खतरनाक हो सकता है।
+        </div>
+    </div>
+
+    <div class="quote-box">"घर बंधन का कारण नहीं, जंगल मुक्ति का कारण नहीं। वासना ही बंधन का कारण है और वासना शून्यता ही मुक्ति है।"</div>
+
+    <div class="footer">
+        <div class="disclaimer-box">
+            <strong style="color: var(--secondary-color); font-size: 1.1em; display:block; margin-bottom: 10px;">⚠️ स्पष्टीकरण (Clarification)</strong>
+            यह पोस्ट गुरुदेव की सेवा में AI (कृत्रिम बुद्धिमत्ता) की सहायता से तैयार की गई है। <strong>AI द्वारा उत्पन्न पाठ में त्रुटियां हो सकती हैं</strong>, अतः इसका उपयोग विवेकपूर्ण तरीके से करें। <br><br>
+            <span style="color: #d32f2f; font-weight: 600;">हम आपसे अनुरोध करते हैं कि सत्यता और पूर्ण लाभ के लिए पूरा वीडियो अवश्य देखें और इसे स्किप न करें।</span> यह सारांश केवल एक संदर्भ (Reference Guide) मात्र है।
+        </div>
+        <br>
+        <div style="color: var(--secondary-color); font-weight: 600; margin-bottom: 10px; font-size: 1.1em;">
+            Priyakunjashram, Peelipokher, Barsana - 281405, Mathura, UP
+        </div>
+        Based on the teachings from PriyaKunj Ras Satsang
+    </div>
+</div>
+</body>
+</html>
