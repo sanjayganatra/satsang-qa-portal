@@ -15,126 +15,446 @@ import google.generativeai as genai
 # ============================================================
 # 1) PAGE CONFIG
 # ============================================================
-PAGE_TITLE = "Priyakunj Q/A Portal"
+PAGE_TITLE = "Welcome to PriyaKunj"
 ICON = "🙏"
 st.set_page_config(page_title=PAGE_TITLE, page_icon=ICON)
 
 # --- CSS ---
 CUSTOM_CSS = """
 <style>
-/* Overall */
-.block-container { padding-top: 1.5rem; }
+    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&family=Yatra+One&display=swap');
+    
+    /* =========================================================================
+       HYBRID THEME: Apple Glass + Saffron (11 Dec Original Colors)
+       ========================================================================= */
+       
+    /* BACKGROUND: Saffron Gradient (Original) */
+    .stApp {
+        background: linear-gradient(180deg, #FFF5E1 0%, #FFECB3 100%);
+        background-attachment: fixed;
+        font-family: 'Poppins', sans-serif;
+    }
+    .block-container { padding-top: 1.5rem; }
+    
+    /* HEADER STYLES: Maroon + Yatra One (Original) */
+    h1, h2, h3 {
+        color: #8B0000 !important;
+        font-family: 'Yatra One', cursive, sans-serif !important;
+        letter-spacing: 0.5px;
+        text-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+    
+    /* Remove Default Streamlit Header */
+    [data-testid="stHeader"] {
+        background: transparent !important;
+        color: #8B0000 !important;
+    }
+    
+    /* FIX: Force Sidebar Toggle Button Visibility */
+    /* Give it a visible background and white icon for maximum contrast */
+    [data-testid="collapsedControl"], 
+    button[kind="header"],
+    button[kind="headerNoPadding"] {
+        background: #8B0000 !important;
+        border-radius: 6px !important;
+        padding: 6px !important;
+        margin: 8px !important;
+    }
+    
+    [data-testid="collapsedControl"] svg, 
+    button[kind="header"] svg,
+    button[kind="headerNoPadding"] svg,
+    [data-testid="stSidebarNav"] svg {
+        fill: white !important;
+        color: white !important;
+        stroke: white !important;
+    }
 
-/* Card styling */
-.answer-card {
-  background-color: #ffffff;
-  border: 1px solid #e0e0e0;
-  border-radius: 8px;
-  padding: 20px 20px 24px 20px;
-  margin-bottom: 20px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-}
-.answer-header {
-  display: flex;
-  gap: 12px;
-  margin-bottom: 16px;
-}
-.answer-number {
-  background-color: #e8f0fe; /* Light blue accent */
-  color: #1a73e8;
-  font-size: 0.8rem;
-  font-weight: 700;
-  padding: 4px 8px;
-  border-radius: 6px;
-  height: fit-content;
-  min-width: 36px;
-  text-align: center;
-}
-.answer-q {
-  font-size: 1.15rem;
-  font-weight: 600;
-  color: #202124;
-  line-height: 1.5;
-  margin-top: -2px; /* slight visual adjustment */
-}
-.answer-divider {
-  border-top: 1px solid #f1f3f4;
-  margin: 0 0 12px 48px; /* Indented to match text */
-}
+    /* CARD STYLING: Glassmorphism + Saffron Accent */
+    .answer-card, .stCard, div[data-testid="stExpander"] {
+        background: rgba(255, 255, 255, 0.70) !important; /* Glassy White */
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.5);
+        border-left: 5px solid #FF9933 !important; /* Saffron Accent */
+        border-radius: 18px;
+        padding: 24px;
+        margin-bottom: 20px;
+        box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.07);
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    
+    /* FIX: Comment Section Styling */
+    div[data-testid="stExpander"] details summary {
+        background: linear-gradient(135deg, rgba(255, 153, 51, 0.2), rgba(255, 128, 0, 0.2)) !important;
+        color: #8B0000 !important;
+        font-weight: 600 !important;
+        border-radius: 12px !important;
+        padding: 12px !important;
+    }
+    
+    /* Text Area in Comments */
+    textarea {
+        background-color: white !important;
+        color: #4E342E !important;
+        border: 2px solid #FF9933 !important;
+        border-radius: 12px !important;
+        font-family: 'Poppins', sans-serif !important;
+    }
+    
+    textarea::placeholder {
+        color: #999 !important;
+    }
+    
+    textarea:focus {
+        border-color: #8B0000 !important;
+        box-shadow: 0 0 0 2px rgba(139, 0, 0, 0.1) !important;
+        outline: none !important;
+    }
+    
+    .answer-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 12px 40px 0 rgba(139, 69, 19, 0.15); /* Warm shadow */
+    }
 
-/* Answer Section */
-.answer-body {
-  display: flex;
-  gap: 12px;
-}
-.answer-label {
-  font-size: 0.75rem;
-  font-weight: 700;
-  color: #5f6368;
-  background-color: #f1f3f4;
-  padding: 2px 6px;
-  border-radius: 4px;
-  height: fit-content;
-  margin-top: 4px;
-  min-width: 36px;
-  text-align: center;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-.answer-a {
-  font-size: 1.0rem;
-  line-height: 1.6;
-  color: #3c4043;
-  white-space: pre-wrap;
-}
+    /* BUTTONS: Glassy Saffron Capsule */
+    div.stButton > button {
+        background: linear-gradient(135deg, rgba(255, 153, 51, 0.9), rgba(255, 128, 0, 0.9)) !important;
+        backdrop-filter: blur(5px);
+        color: white !important;
+        border: 1px solid rgba(255, 255, 255, 0.4) !important;
+        border-radius: 99px !important; /* Capsule */
+        font-weight: 600 !important;
+        padding: 0.6rem 1.5rem !important;
+        box-shadow: 0 4px 15px rgba(255, 128, 0, 0.3) !important;
+        font-family: 'Poppins', sans-serif !important;
+        transition: all 0.2s ease !important;
+    }
+    div.stButton > button:hover {
+        transform: scale(1.03);
+        box-shadow: 0 6px 20px rgba(255, 128, 0, 0.5) !important;
+        background: linear-gradient(135deg, #FF9933, #FF8000) !important;
+    }
+    
+    /* INPUTS & FILTERS */
+    .stTextInput > div > div > input {
+        background: rgba(255, 255, 255, 0.8) !important;
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255,255,255,0.6) !important;
+        border-radius: 12px !important;
+        color: #333 !important;
+    }
+    
+    /* Fix Input Label Contrast */
+    .stTextInput label {
+        color: #8B0000 !important;
+        font-weight: 600 !important;
+        font-size: 1.1rem !important;
+    }
+    
+    /* Fix input field background and text */
+    div[data-baseweb="input"] {
+        background-color: white !important;
+        border: 2px solid #FF9933 !important;
+        border-radius: 12px !important;
+    }
+    
+    /* Force input text to be dark */
+    input.st-bd {
+        color: #4E342E !important;
+        background-color: white !important;
+    }
+    
+    /* Make placeholder text visible */
+    input::placeholder {
+        color: #999 !important;
+        opacity: 1 !important;
+    }
+    
+    /* Focus state */
+    div[data-baseweb="input"]:focus-within {
+        border-color: #8B0000 !important;
+        box-shadow: 0 0 0 2px rgba(139, 0, 0, 0.1) !important;
+    }
+    
+    /* Auto-height for buttons to handle wrapping text if needed */
+    div.stButton > button {
+        height: auto !important;
+        min-height: 2.5rem !important;
+        white-space: normal !important;
+    }
+    
+    /* SELECTBOX & DROPDOWN OVERRIDES (Fix Black Background) */
+    div[data-baseweb="select"] > div {
+        background: linear-gradient(135deg, rgba(255, 245, 225, 0.9), rgba(255, 236, 179, 0.9)) !important;
+        border: 1px solid rgba(255, 153, 51, 0.3) !important;
+        border-radius: 12px !important;
+        color: #4E342E !important;
+    }
+    
+    /* POPOVER MENU (The actual dropdown list) */
+    div[data-baseweb="menu"], 
+    div[data-baseweb="popover"], 
+    ul[data-testid="stSelectboxVirtualDropdown"] {
+        background: #FFF5E1 !important; /* Saffron Background */
+        border: 1px solid #FF9933 !important;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1) !important;
+    }
+    
+    /* OPTIONS TEXT */
+    div[data-baseweb="option"], li {
+        color: #4E342E !important;
+        background: transparent !important;
+    }
+    /* HOVER STATE FOR OPTIONS */
+    div[data-baseweb="option"]:hover, li[role="option"]:hover, li[aria-selected="true"] {
+        background: rgba(255, 153, 51, 0.2) !important; /* Light Orange hover */
+        color: #8B0000 !important;
+        font-weight: 600 !important;
+    }
 
-.answer-meta {
-  font-size: 0.75rem;
-  color: #9aa0a6;
-  margin-top: 12px;
-  padding-left: 48px;
-}
+    /* TEXT VISIBILITY FIXES */
+    .stMarkdown p, .stText, div, span, li, label {
+        color: #4E342E; /* Dark Brown Text */
+    }
+    
+    /* Stronger contrast for headers and labels */
+    .stSidebar label, .stSidebar h1, .stSidebar h2, .stSidebar h3, .stSidebar div[data-testid="stMarkdown"] p {
+         color: #8B0000 !important; /* Maroon for sidebar headers/labels */
+         font-weight: 600 !important;
+    }
+    .qa-box, .card, .content-text, .qa-q, .qa-a {
+        color: #4E342E !important;
+    }
 
-/* Slicer chips */
-.slicer-wrap {
-  display: flex;
-  gap: 8px;
-  overflow-x: auto;
-  padding-bottom: 6px;
-}
-
-/* Mobile Optimizations */
-@media (max-width: 600px) {
-  .answer-card {
-    padding: 16px;
-    margin-bottom: 12px;
-  }
-  .answer-q {
-    font-size: 1.05rem;
-  }
-  .answer-a {
-    font-size: 0.95rem;
-  }
-  .answer-header {
-    gap: 8px;
-    margin-bottom: 12px;
-  }
-  .answer-number {
-    min-width: 28px;
-    font-size: 0.75rem;
-  }
-  .answer-divider {
-     margin: 0 0 12px 0; /* Full width divide on mobile */
-  }
-}
+    /* GOOGLE TRANSLATE WIDGET (Top Right) */
+    #google_translate_element {
+        position: fixed; /* Fixed to stay on top */
+        top: 60px; /* Below Streamlit header */
+        right: 20px;
+        z-index: 99999;
+    }
+    .goog-te-gadget .goog-te-combo {
+        background: rgba(255,255,255,0.8);
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        padding: 4px;
+        font-family: 'Poppins', sans-serif;
+    }
+    
+    /* Mobile Optimizations - iOS, Android, Windows */
+    @media (max-width: 768px) {
+      /* Universal mobile fixes */
+      .answer-card { 
+        padding: 16px; 
+        border-radius: 14px; 
+        margin: 8px 0;
+      }
+      h1 { font-size: 1.8rem !important; }
+      h2 { font-size: 1.3rem !important; }
+      
+      /* Input fields touch-friendly */
+      input, button, .stButton button {
+        min-height: 44px !important; /* Apple HIG minimum */
+        font-size: 16px !important; /* Prevents iOS zoom */
+      }
+      
+      /* Sidebar toggle more visible on mobile */
+      [data-testid="collapsedControl"] {
+        padding: 10px !important;
+        margin: 10px !important;
+      }
+      
+      /* Google Translate position */
+      #google_translate_element { 
+        top: 10px; 
+        right: 10px; 
+        position: absolute; 
+      }
+      
+      /* Prevent text from being too small */
+      body, p, div, span {
+        -webkit-text-size-adjust: 100%;
+        -moz-text-size-adjust: 100%;
+        -ms-text-size-adjust: 100%;
+      }
+    }
 </style>
 """
 st.markdown(CUSTOM_CSS, unsafe_allow_html=True)
 
+# ============================================================
+# GLOBAL TRANSLATE WIDGET
+# ============================================================
+st.markdown("""
+<div id="google_translate_element"></div>
+<script type="text/javascript">
+    function googleTranslateElementInit() {
+        new google.translate.TranslateElement({
+            pageLanguage: 'en', autoDisplay: false, 
+            includedLanguages: 'en,gu,mr,hi,bn,es,fr,de,it,pt,ru,ar,zh-CN,ja', 
+        }, 'google_translate_element');
+    }
+</script>
+<script type="text/javascript" src="https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
+""", unsafe_allow_html=True)
+
+
 
 # ============================================================
-# 2) CLEANING / NORMALIZATION
+# TRANSLATIONS (i18n)
 # ============================================================
+TRANSLATIONS = {
+    "English": {
+        "page_title": "Welcome to PriyaKunj",
+        "home_subtitle": "Explore the divine wisdom of Shri Shri 108 Shri Vinod Bihari Das Babaji Maharaj",
+        "ask_question_title": "🔍 Find an Answer",
+        "ask_question_desc": "Search our extensive knowledge base of Q&A sessions.",
+        "ask_question_btn": "Go to Q/A Search",
+        "satsang_title": "📅 Daily Satsang",
+        "satsang_desc": "Watch daily lectures, summaries, and Q&A.",
+        "satsang_btn": "Go to Daily Satsang",
+        "sidebar_home": "🏠 Home",
+        "search_btn": "Search",
+        "browse_btn": "Browse All",
+        "page_size": "Page Size",
+        "view_lang_label": "View Language",
+        "slicer_label_en": "Quick Filters (English Keywords)",
+        "slicer_label_hi": "Quick Filters (Hindi Keywords)",
+        "showing_results": "Showing {start}-{end} of {total} results",
+        "page_num": "Page {page} of {total}",
+        "go_to": "Go to",
+        "next": "Next ▶",
+        "prev": "◀ Prev",
+        "debug_mode": "Show Debug Info",
+        "translate_toggle": "Translate English query to Hindi for search",
+        "conversations_loaded": "Conversations Loaded: {count}",
+        "no_satsang_files": "No {lang} content found.",
+        "satsang_instruction": "How to add content:",
+        "select_topic": "Select {lang} Topic",
+        "viewing_file": "Viewing: {file}"
+    },
+    "Hindi": {
+        "page_title": "प्रियाकुंज में आपका स्वागत है",
+        "home_subtitle": "श्री श्री 108 श्री विनोद बिहारी दास बाबाजी महाराज की दिव्य वाणी का अन्वेषण करें",
+        "ask_question_title": "🔍 जवाब ढूंढें",
+        "ask_question_desc": "हमारे विस्तृत प्रश्नोत्तर ज्ञान कोष में खोजें।",
+        "ask_question_btn": "प्रश्नोत्तर खोज पर जाएं",
+        "satsang_title": "📅 दैनिक सत्संग",
+        "satsang_desc": "दैनिक प्रवचन, सारांश और प्रश्नोत्तर देखें।",
+        "satsang_btn": "दैनिक सत्संग पर जाएं",
+        "sidebar_home": "🏠 मुख्य पृष्ठ",
+        "search_btn": "खोजें",
+        "browse_btn": "सभी देखें",
+        "page_size": "पृष्ठ आकार",
+        "view_lang_label": "भाषा चुनें",
+        "slicer_label_en": "त्वरित फिल्टर (अंग्रेजी शब्द)",
+        "slicer_label_hi": "त्वरित फिल्टर (हिंदी शब्द)",
+        "showing_results": "{total} परिणामों में से {start}-{end} दिखा रहा है",
+        "page_num": "पृष्ठ {page} / {total}",
+        "go_to": "इस पृष्ठ पर जाएं",
+        "next": "अगला ▶",
+        "prev": "◀ पिछला",
+        "debug_mode": "डीबग जानकारी दिखाएं",
+        "translate_toggle": "खोज के लिए अंग्रेजी प्रश्न का हिंदी अनुवाद करें",
+        "conversations_loaded": "वार्तालाप लोड किए गए: {count}",
+        "no_satsang_files": "{lang} सामग्री नहीं मिली।",
+        "satsang_instruction": "सामग्री कैसे जोड़ें:",
+        "select_topic": "{lang} विषय चुनें",
+        "viewing_file": "देख रहे हैं: {file}"
+    }
+}
+
+def get_text(key, target_lang="English", **kwargs):
+    """Helper to get translated text safeley"""
+    t = TRANSLATIONS.get(target_lang, TRANSLATIONS["English"]).get(key, key)
+    if kwargs:
+        return t.format(**kwargs)
+    return t
+
+# ============================================================
+# HELPER: SATSANG METADATA EXTRACTION
+# ============================================================
+def extract_satsang_metadata(file_path):
+    """
+    Parses HTML file to find:
+    1. Date (DD-MMM-YYYY or DD-MM-YYYY)
+    2. Strings like 'विषय :' or the main <h1> title to use as 'Vishay'
+    Returns dict: { 'date_obj': date|None, 'date_str': str, 'title': str }
+    """
+    import datetime
+    
+    try:
+        with open(file_path, "r", encoding="utf-8") as f:
+            content = f.read()
+            
+        # 1. Extract Date
+        # patterns: 11-DEC-2025, 11-Dec-2025, 11/12/2025, 11-12-2025
+        date_obj = None
+        date_str = ""
+        
+        # Regex for DD-MMM-YYYY (e.g., 11-DEC-2025)
+        match_date_text = re.search(r"(\d{1,2})-(JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)-(\d{4})", content, re.IGNORECASE)
+        if match_date_text:
+            d, m, y = match_date_text.groups()
+            date_str = f"{d}-{m.upper()}-{y}"
+            try:
+                date_obj = datetime.datetime.strptime(date_str, "%d-%b-%Y").date()
+            except:
+                pass
+        
+        # Fallback date regex: DD-MM-YYYY
+        if not date_obj:
+            match_date_num = re.search(r"(\d{1,2})[-/](\d{1,2})[-/](\d{4})", content)
+            if match_date_num:
+                d, m, y = match_date_num.groups()
+                date_str = f"{d}-{m}-{y}"
+                try:
+                    date_obj = datetime.datetime.strptime(date_str, "%d-%m-%Y").date()
+                except:
+                    pass
+
+        # 2. Extract Title (Vishay)
+        # Priority 1: Line containing "विषय :" (Vishay :)
+        title = "Daily Satsang"
+        match_vishay = re.search(r"विषय\s*[:|-]\s*(.*?)<", content) 
+        if not match_vishay:
+            # try without < at end if just raw text
+            match_vishay = re.search(r"विषय\s*[:|-]\s*(.*)", content)
+            
+        if match_vishay:
+            title = match_vishay.group(1).strip()
+            # remove HTML tags if any slipped in
+            title = re.sub(r"<[^>]+>", "", title).strip()
+        else:
+            # Priority 2: content of first <h1>
+            match_h1 = re.search(r"<h1[^>]*>(.*?)</h1>", content, re.DOTALL | re.IGNORECASE)
+            if match_h1:
+                raw_h1 = match_h1.group(1)
+                # clean tags
+                title = re.sub(r"<[^>]+>", "", raw_h1).strip()
+        
+        # Final formatting: "Title | DD, MMM, YYYY"
+        # If we have a valid date object, format nicely
+        display_date = date_str
+        if date_obj:
+            display_date = date_obj.strftime("%d, %b, %Y")
+            
+        full_title = title
+        if display_date:
+            full_title = f"{title} | {display_date}"
+            
+        return {
+            "date_obj": date_obj,
+            "date_str": display_date,
+            "title": title,
+            "full_title": full_title
+        }
+        
+    except Exception as e:
+        print(f"Metadata parsing error for {file_path}: {e}")
+        return {"date_obj": None, "date_str": "", "title": "Satsang", "full_title": "Satsang"}
+
 WHATSAPP_PATTERNS = [
     r"\b\d{1,2}/\d{1,2}/\d{2,4},\s*\d{1,2}:\d{2}\s*(AM|PM)\s*-\s*",  # "1/10/25, 7:11 PM -"
     r"\b\d{1,2}:\d{2}\s*(AM|PM)\b",                                # "7:11 PM"
@@ -806,33 +1126,453 @@ def build_index(provider: str, api_key: str, texts_tuple: tuple[str, ...]):
 
 
 # ============================================================
-# 6) UI
+# STATE MANAGEMENT & LANGUAGE
 # ============================================================
-c_title, c_lang = st.columns([3, 1])
-with c_title:
-    st.title(f"{ICON} {PAGE_TITLE}")
-with c_lang:
-    st.caption("View Language")
-    view_lang = st.radio("View Language", ["Hindi", "English"], horizontal=True, label_visibility="collapsed")
+if "view_lang" not in st.session_state:
+    st.session_state["view_lang"] = "English"
 
+if "current_view" not in st.session_state:
+    st.session_state["current_view"] = "home"
+
+# Language Toggle (Top Right or Sidebar - keeping consistent with previous UX)
+# usage: we will render the radio button later, but we need the value now.
+# Note: Streamlit widgets return the value *after* interaction, 
+# so we might moved the widget here or just rely on session state default.
+
+# Let's put the language toggle in the sidebar for cleaner global access, 
+# OR keep it at top of main area. 
+# Current design: Top of main area.
+# We will read st.session_state if available, else default.
+
+# ============================================================
+# HOME PAGE LOGIC
+# ============================================================
+def render_home_page(lang):
+    t_title = get_text("page_title", lang)
+    t_sub = get_text("home_subtitle", lang)
+    
+    st.markdown(f"""
+    <div style="text-align: center; padding: 40px 20px;">
+        <h1 style="font-size: 3rem; margin-bottom: 0.5rem;">{t_title}</h1>
+        <p style="font-size: 1.2rem; color: #5A2D0C; margin-bottom: 40px;">
+            {t_sub}
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
+
+    c1, c2 = st.columns(2)
+    with c1:
+        st.markdown(f"""
+        <div class="answer-card" style="text-align: center; min-height: 250px; display: flex; flex-direction: column; justify-content: center; align-items: center; cursor: pointer;">
+            <h2 style="color: #FF8000; margin-top: 0;">{get_text('ask_question_title', lang)}</h2>
+            <p style="color: #3E2723; margin-bottom: 0;">{get_text('ask_question_desc', lang)}</p>
+        </div>
+        """, unsafe_allow_html=True)
+        if st.button(get_text('ask_question_btn', lang), use_container_width=True):
+            st.session_state["current_view"] = "qa"
+            st.rerun()
+
+    with c2:
+        st.markdown(f"""
+        <div class="answer-card" style="text-align: center; min-height: 250px; display: flex; flex-direction: column; justify-content: center; align-items: center; cursor: pointer;">
+            <h2 style="color: #FF8000; margin-top: 0;">{get_text('satsang_title', lang)}</h2>
+            <p style="color: #3E2723; margin-bottom: 0;">{get_text('satsang_desc', lang)}</p>
+        </div>
+        """, unsafe_allow_html=True)
+        if st.button(get_text('satsang_btn', lang), use_container_width=True):
+            st.session_state["current_view"] = "satsang"
+            st.rerun()
+
+# ============================================================
+# SATSANG (BLOG) PAGE LOGIC
+# ============================================================
+import os
+
+def preprocess_html_for_markdown(html_content: str) -> str:
+    """
+    Strips leading whitespace from each line to prevent Streamlit's Markdown parser
+    from interpreting indented HTML tags as code blocks.
+    """
+    lines = html_content.splitlines()
+    # lstrip() removes leading whitespace
+    return "\n".join(line.lstrip() for line in lines)
+
+def render_satsang_page(view_lang):
+    # Google Translate Widget (per user request)
+    translate_css = """
+    <style>
+        .goog-te-banner-frame.skiptranslate { display: none !important; }
+        #google_translate_element { position: relative; z-index: 9999; }
+        .goog-te-gadget { font-size: 0px !important; color: transparent !important; }
+        .goog-te-gadget .goog-te-combo {
+            font-size: 13px !important; font-weight: 500; color: #555 !important;
+            background: rgba(255,255,255,0.8); border: 1px solid rgba(0,0,0,0.1);
+            padding: 4px 8px; border-radius: 6px; outline: none; cursor: pointer;
+            box-shadow: none; font-family: 'Poppins', sans-serif;
+        }
+    </style>
+    """
+    
+    translate_widget = """
+    <div id="google_translate_element"></div>
+    <script type="text/javascript">
+        function googleTranslateElementInit() {
+            new google.translate.TranslateElement({
+                pageLanguage: 'en', autoDisplay: false, 
+                includedLanguages: 'en,gu,mr,hi,bn,es,fr,de,it,pt,ru,ar,zh-CN,ja', 
+            }, 'google_translate_element');
+        }
+    </script>
+    <script type="text/javascript" src="https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
+    """
+
+    c_head, c_trans = st.columns([3, 1])
+    with c_head:
+        t_title = get_text("satsang_title", view_lang)
+        st.markdown(f'<h2 style="text-align: left; color: #8B0000; margin: 0;">{ICON} {t_title}</h2>', unsafe_allow_html=True)
+        
+    with c_trans:
+        st.markdown(translate_css + translate_widget, unsafe_allow_html=True)
+
+    st.markdown("---")
+    
+    BASE_DIR = "satsang_content"
+    CONTENT_DIR = BASE_DIR
+    
+    if not os.path.exists(CONTENT_DIR):
+        os.makedirs(CONTENT_DIR, exist_ok=True)
+        
+    # 1. SCAN & PARSE METADATA
+    all_files = []
+    
+    for root, cols, files in os.walk(CONTENT_DIR):
+        for file in files:
+            if file.endswith(".html"):
+                full_path = os.path.join(root, file)
+                meta = extract_satsang_metadata(full_path)
+                
+                # Determine sorting key (Date object > Date string > Filename)
+                sort_key = meta["date_str"] if meta["date_str"] else file
+                try:
+                    if meta["date_obj"]: sort_key = meta["date_obj"].isoformat()
+                except: pass
+                
+                # Determine Group (Month YYYY)
+                group_label = "Uncategorized"
+                if meta["date_obj"]:
+                    group_label = meta["date_obj"].strftime("%B %Y") # e.g., December 2025
+                elif meta["date_str"]:
+                     # If string but no obj, try to just grab rightmost chunk
+                     # but let's stick to Uncategorized for safety if parsing failed
+                     pass
+
+                all_files.append({
+                    "path": full_path,
+                    "filename": file,
+                    "title": meta["title"],
+                    "full_title": meta["full_title"],
+                    "date_obj": meta["date_obj"],
+                    "group": group_label,
+                    "sort_key": sort_key
+                })
+
+    if not all_files:
+        st.info(get_text("no_satsang_files", view_lang, lang=view_lang))
+        return
+
+    # 2. SORT & GROUP
+    # Sort descending by date
+    all_files.sort(key=lambda x: x["sort_key"], reverse=True)
+    
+    # Get unique groups in order of appearance (since we sorted files by date, groups will be chronological desc)
+    groups = []
+    files_by_group = {}
+    
+    for f in all_files:
+        g = f["group"]
+        if g not in files_by_group:
+            groups.append(g)
+            files_by_group[g] = []
+        files_by_group[g].append(f)
+        
+    # 3. ARCHIVE SELECTOR UI
+    c_month, c_topic = st.columns([1, 2])
+    
+    with c_month:
+        st.markdown("**🗓️ Archives**")
+        selected_group = st.selectbox("Select Month", groups, index=0, label_visibility="collapsed")
+        
+    with c_topic:
+        st.markdown("**📖 Select Topic**")
+        filtered_files = files_by_group[selected_group]
+        # Map full titles to indices
+        file_options = {f["full_title"]: i for i, f in enumerate(filtered_files)}
+        selected_title = st.selectbox("Topic", list(file_options.keys()), index=0, label_visibility="collapsed")
+        
+    selected_file_data = filtered_files[file_options[selected_title]]
+    file_path = selected_file_data["path"]
+    
+    # 4. RENDER CONTENT
+    try:
+        with open(file_path, "r", encoding="utf-8") as f:
+            raw_content = f.read()
+            
+        # 4. RENDER CONTENT (IFRAME ISOLATION - Full Height)
+        # Using components.html creates a sandboxed iframe. 
+        # This solves ALL scope issues (const redeclaration), ID collisions, and script execution failures.
+        import streamlit.components.v1 as components
+        
+        # Use very generous height to ensure all content visible without scrollbar
+        # This accommodates varying content lengths across different files
+        iframe_height = 2500 
+        
+        # Disable scrollbar for clean appearance
+        components.html(raw_content, height=iframe_height, scrolling=False)
+        
+        # 5. SOCIAL / ENGAGEMENT UI (Below the content)
+        st.markdown("---")
+        c_like, c_share = st.columns([1, 4])
+        
+        # Like Button (Session State)
+        like_key = f"like_{selected_file_data['filename']}"
+        if like_key not in st.session_state:
+            st.session_state[like_key] = False
+            
+        with c_like:
+            if st.button("❤️ Like" if not st.session_state[like_key] else "💖 Liked"):
+                st.session_state[like_key] = not st.session_state[like_key]
+                st.rerun()
+                
+        # Social Share Links
+        with c_share:
+            # We can't get real URL in Streamlit easily, so we share a generic msg + Title
+            share_text = f"Read this beautiful Satsang: {selected_file_data['full_title']}"
+            import urllib.parse
+            safe_text = urllib.parse.quote(share_text)
+            
+            st.markdown(f"""
+            <div style="display:flex; gap:10px; align-items:center;">
+                <a href="https://wa.me/?text={safe_text}" target="_blank" style="text-decoration:none; font-size:1.2rem;">🟢 WhatsApp</a>
+            </div>
+            """, unsafe_allow_html=True)
+            
+        # Comments (CSV Storage) - Full Width
+        st.markdown("") # Spacer
+        with st.expander("💬 Comments"):
+                # Load existing comments for this file
+                import pandas as pd
+                comment_file = "comments.csv"
+                existing_comments = []
+                
+                if os.path.exists(comment_file):
+                    try:
+                        df_comments = pd.read_csv(comment_file)
+                        # smooth handling if empty
+                        if not df_comments.empty and "filename" in df_comments.columns:
+                            file_comments = df_comments[df_comments["filename"] == selected_file_data["filename"]]
+                            # Sort by time desc
+                            if not file_comments.empty:
+                                existing_comments = file_comments.to_dict("records")
+                    except:
+                        pass
+
+                # Show existing
+                if existing_comments:
+                    st.markdown("**Recent Comments:**")
+                    for c in existing_comments[-3:]: # Show last 3
+                        st.text(f"📝 {c.get('timestamp', '')}: {c.get('text', '')}")
+
+                # Add new
+                new_comment = st.text_area("Leave a thought...", key=f"txt_{selected_file_data['filename']}", height=80)
+                if st.button("Post Comment", key=f"btn_{selected_file_data['filename']}"):
+                    if new_comment.strip():
+                        import datetime
+                        ts = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
+                        new_entry = {
+                            "filename": selected_file_data["filename"],
+                            "timestamp": ts,
+                            "text": new_comment.strip()
+                        }
+                        
+                        # Append to CSV
+                        df_new = pd.DataFrame([new_entry])
+                        if os.path.exists(comment_file):
+                            df_new.to_csv(comment_file, mode='a', header=False, index=False)
+                        else:
+                            df_new.to_csv(comment_file, mode='w', header=True, index=False)
+                            
+                        st.success("Thank you for your reflection! (Saved)")
+                        st.rerun()
+                    else:
+                        st.warning("Please write something first.")
+            
+    except Exception as e:
+        st.error(f"Error loading file: {e}")
+            
+
+
+# ============================================================
+# CSS PATCH FOR RADIO BUTTONS & TEXT
+# ============================================================
+# Ensure radio labels and standard text are dark enough on Saffron bg
+st.markdown("""
+<style>
+    /* Radio Button Labels */
+    .stRadio label, div[data-testid="stRadio"] label {
+        color: #4E342E !important; 
+        font-weight: 600;
+    }
+    /* General text readability boost */
+    .stMarkdown p, .stText {
+        color: #3E2723;
+    }
+    
+    /* FIX: Force Satsang Content Text to be Dark */
+    .qa-box, .card, .content-text, .qa-q, .qa-a {
+        color: #3E2723 !important;
+    }
+    .qa-box p, .card p {
+        color: #3E2723 !important;
+    }
+    
+    /* FIX: Satsang Button Contrast */
+    .main-yt-btn, .yt-link {
+        color: white !important;
+        text-decoration: none !important;
+    }
+    /* FIX: Satsang Main Button Contrast (White on Red) */
+    .main-yt-btn {
+        color: white !important;
+        text-decoration: none !important;
+    }
+    .main-yt-btn:visited {
+        color: white !important;
+    }
+    
+    /* Q&A Card Styling Override */
+    .answer-number {
+        background: #FF9933; color: white; padding: 2px 8px; border-radius: 12px; font-size: 0.8rem; font-weight: bold;
+    }
+    .answer-q {
+        font-weight: 600; color: #8B0000; margin-left: 8px;
+    }
+    /* FIX: Revert yt-link to red text for contrast on pink background */
+    .yt-link {
+        color: #d32f2f !important;
+        text-decoration: none !important;
+    }
+    .yt-link:visited {
+        color: #d32f2f !important;
+    }
+    .answer-label {
+        background: #4E342E; color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.7rem; margin-right: 8px; height: fit-content; margin-top: 4px;
+    }
+    .answer-body {
+        display: flex; align-items: flex-start; margin-top: 8px; background: rgba(255,153,51,0.1); padding: 8px; border-radius: 8px;
+    }
+    .answer-a {
+        color: #3E2723; font-size: 0.95rem; line-height: 1.5;
+    }
+</style>
+""", unsafe_allow_html=True)
+
+# ============================================================
+# GLOBAL SIDEBAR & NAVIGATION
+# ============================================================
+# Initialize default language to Hindi
+if "view_lang" not in st.session_state:
+    st.session_state["view_lang"] = "Hindi"
+
+# Initialize default view
+if "current_view" not in st.session_state:
+    st.session_state["current_view"] = "home"
+
+with st.sidebar:
+    # Home Button (Always visible)
+    if st.button(get_text("sidebar_home", st.session_state["view_lang"]), use_container_width=True):
+        st.session_state["current_view"] = "home"
+        st.rerun()
+    
+    st.markdown("---")
+
+    # --- GLOBAL AI SETTINGS (Required for Index Build) ---
+    st.sidebar.header("AI Settings")
+    provider = st.sidebar.radio("AI Provider", ["Local (Free)", "Google Gemini"], index=1, key="ai_provider_radio_global")
+    
+    api_key = st.secrets.get("GOOGLE_API_KEY", "")
+    if provider == "Google Gemini":
+        if api_key:
+            st.sidebar.success("API Key loaded from secrets")
+        else:
+            api_key = st.sidebar.text_input("Google API Key", type="password")
+    st.sidebar.markdown("---")
+    
+    # Language Toggle (Global)
+    # Hide on Satsang page as per user request
+    if st.session_state.get("current_view") != "satsang":
+        lang_label = get_text("view_lang_label", st.session_state["view_lang"])
+        
+        # We force the radio to use the session state value
+        st.radio(
+            lang_label, 
+            ["Hindi", "English"], 
+            key="view_lang",
+            horizontal=True
+        )
+
+
+# Capture current language for local usage
+view_lang = st.session_state["view_lang"]
+
+# ============================================================
+# GLOBAL DATA & INDEX LOADING (Optimization)
+# ============================================================
+# Load data immediately so it's ready for any view
+df, error_msg = load_data()
+if error_msg:
+    st.error(error_msg)
+    st.stop()
+
+# Build embeddings index globally (prevents delay on first search)
+embed_texts = tuple(df["embed_text"].tolist())
+with st.spinner("Building search index..."):
+    model, doc_embeddings, model_error = build_index(provider, api_key, embed_texts)
+
+if model_error:
+    st.error(model_error)
+    st.stop()
+    
+if st.session_state["current_view"] == "home":
+    render_home_page(st.session_state["view_lang"])
+    st.stop()
+elif st.session_state["current_view"] == "satsang":
+    render_satsang_page(st.session_state["view_lang"])
+    st.stop()
+
+# ============================================================
+# Q/A APP LOGIC (Only runs if current_view == 'qa')
+
+
+# ============================================================
+# Q/A APP LOGIC (Only runs if current_view == 'qa')
+# ============================================================
+st.sidebar.markdown("---")
 st.sidebar.header("Settings")
 # page_size moved to main area
 if "page" not in st.session_state:
     st.session_state["page"] = 1
 
-provider = st.sidebar.radio("AI Provider", ["Local (Free)", "Google Gemini"], index=1)
+# page_size moved to main area
+if "page" not in st.session_state:
+    st.session_state["page"] = 1
 
-api_key = st.secrets.get("GOOGLE_API_KEY", "")
-if provider == "Google Gemini":
-    if api_key:
-        st.sidebar.success("API Key loaded from secrets")
-    else:
-        api_key = st.sidebar.text_input("Google API Key", type="password")
+# Provider settings moved to global sidebar above
 
 search_mode = st.sidebar.radio(
     "Search Mode",
     ["Hybrid (Recommended)", "Semantic Only", "Literal Only"],
-    index=0
+    index=0,
+    key="search_mode_radio"
 )
 use_phrase_match = st.sidebar.checkbox("Prefer exact phrase for short queries", value=True)
 top_k = st.sidebar.slider("Semantic candidates (Top-K)", 10, 200, 40, step=10)
@@ -842,37 +1582,28 @@ semantic_weight = st.sidebar.slider("Hybrid weight (semantic)", 0.0, 1.0, 0.75, 
 
 HIGH_SEM_OVERRIDE = st.sidebar.slider("Short-query semantic override threshold", 0.0, 1.0, 0.62, 0.01)
 
-enable_translation_bridge = st.sidebar.checkbox("Translate English query to Hindi for search", value=True)
+lbl_translate = get_text("translate_toggle", view_lang)
+enable_translation_bridge = st.sidebar.checkbox(lbl_translate, value=True)
 
-debug_mode = st.sidebar.checkbox("Show Debug Info", value=False)
+lbl_debug = get_text("debug_mode", view_lang)
+debug_mode = st.sidebar.checkbox(lbl_debug, value=False)
 
 # Load data
-df, error_msg = load_data()
-if error_msg:
-    st.error(error_msg)
-    st.stop()
+# Load data and Index build (Moved to global scope)
+lbl_loaded = get_text("conversations_loaded", view_lang, count=len(df))
+st.sidebar.info(lbl_loaded)
 
-st.sidebar.info(f"Conversations Loaded: {len(df)}")
+# --- SLICERS ---
 
-# Build embeddings index
-embed_texts = tuple(df["embed_text"].tolist())
-with st.spinner("Building search index..."):
-    model, doc_embeddings, model_error = build_index(provider, api_key, embed_texts)
-
-if model_error:
-    st.error(model_error)
-    st.stop()
-
-# --- SLICERS (PowerBI-like) ---
-# Determine keywords based on selected view language
+# --- SLICERS ---
 if view_lang == "English":
     kw_col = pick_english_source_column(df)
     keywords = extract_top_keywords(df, kw_col, top_n=30) if kw_col else []
-    slicer_label = "Quick Filters (English Keywords)"
+    slicer_label = get_text("slicer_label_en", view_lang)
 else:
     # Hindi keywords
     keywords = extract_hindi_keywords(df, top_n=30)
-    slicer_label = "Quick Filters (Hindi Keywords)"
+    slicer_label = get_text("slicer_label_hi", view_lang)
 
 # Session keys used for auto-search
 if "query" not in st.session_state:
@@ -882,11 +1613,8 @@ if "trigger_search" not in st.session_state:
 
 if keywords:
     with st.expander(slicer_label, expanded=False):
-        # Render chips in columns to simulate horizontal slicers
-        # (Streamlit does not have native PowerBI slicers; this is the closest UX.)
-        # Mobile-friendly: fewer columns on small screens? Streamlit handles wrapping.
         chip_cols = st.columns(6)
-        for i, kw in enumerate(keywords):  # show all keywords inside expander
+        for i, kw in enumerate(keywords):
             with chip_cols[i % 6]:
                 if st.button(kw, key=f"kw_{i}_{kw}", use_container_width=True):
                     st.session_state["query"] = kw
@@ -895,7 +1623,8 @@ else:
     if view_lang == "English":
         st.caption("No English keyword column found for slicers.")
 
-query = st.text_input("Ask a question:", placeholder="e.g., I am Sick / छीन लेना / नाम जप नहीं हो रहा", key="query"
+lbl_ask = get_text("ask_question_title", view_lang)
+query = st.text_input(lbl_ask, placeholder="e.g., I am Sick / छीन लेना / नाम जप नहीं हो रहा", key="query"
 )
 
 
@@ -904,11 +1633,14 @@ query = st.text_input("Ask a question:", placeholder="e.g., I am Sick / छी�
 # ============================================================
 c_search, c_browse, c_size = st.columns([3, 1, 1])
 with c_search:
-    search_clicked = st.button("Search", type="primary", use_container_width=True)
+    lbl_search = get_text("search_btn", view_lang)
+    search_clicked = st.button(lbl_search, type="primary", use_container_width=True)
 with c_browse:
-    browse_clicked = st.button("Browse All", use_container_width=True)
+    lbl_browse = get_text("browse_btn", view_lang)
+    browse_clicked = st.button(lbl_browse, use_container_width=True)
 with c_size:
-    page_size = st.selectbox("Page Size", [5, 10, 20, 50], index=0, label_visibility="collapsed")
+    lbl_size = get_text("page_size", view_lang)
+    page_size = st.selectbox(lbl_size, [5, 10, 20, 50], index=0, label_visibility="collapsed")
 
 auto_clicked = st.session_state.get("trigger_search", False)
 
@@ -1100,17 +1832,22 @@ else:
     st.markdown("---")
     c1, c2, c3, c4 = st.columns([1, 1, 2, 1])
     with c1:
-        if st.button("◀ Prev", disabled=(page <= 1)):
+        lbl_prev = get_text("prev", view_lang)
+        if st.button(lbl_prev, disabled=(page <= 1)):
             st.session_state["page"] = page - 1
             st.rerun()
     with c2:
-        if st.button("Next ▶", disabled=(page >= total_pages)):
+        lbl_next = get_text("next", view_lang)
+        if st.button(lbl_next, disabled=(page >= total_pages)):
             st.session_state["page"] = page + 1
             st.rerun()
     with c3:
-        st.caption(f"Showing {start+1}-{end} of {total} results  |  Page {page} of {total_pages}")
+        lbl_showing = get_text("showing_results", view_lang, start=start+1, end=end, total=total)
+        lbl_page_num = get_text("page_num", view_lang, page=page, total=total_pages)
+        st.caption(f"{lbl_showing}  |  {lbl_page_num}")
     with c4:
-        goto = st.number_input("Go to", min_value=1, max_value=total_pages, value=page, label_visibility="collapsed")
+        lbl_goto = get_text("go_to", view_lang)
+        goto = st.number_input(lbl_goto, min_value=1, max_value=total_pages, value=page, label_visibility="collapsed")
         if goto != page:
             st.session_state["page"] = int(goto)
             st.rerun()
