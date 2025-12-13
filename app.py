@@ -15,7 +15,7 @@ import google.generativeai as genai
 # ============================================================
 # 1) PAGE CONFIG
 # ============================================================
-PAGE_TITLE = "Pandit Baba Satsang Portal"
+PAGE_TITLE = "Priyakunj Q/A Portal"
 ICON = "🙏"
 st.set_page_config(page_title=PAGE_TITLE, page_icon=ICON)
 
@@ -101,6 +101,31 @@ CUSTOM_CSS = """
   gap: 8px;
   overflow-x: auto;
   padding-bottom: 6px;
+}
+
+/* Mobile Optimizations */
+@media (max-width: 600px) {
+  .answer-card {
+    padding: 16px;
+    margin-bottom: 12px;
+  }
+  .answer-q {
+    font-size: 1.05rem;
+  }
+  .answer-a {
+    font-size: 0.95rem;
+  }
+  .answer-header {
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  .answer-number {
+    min-width: 28px;
+    font-size: 0.75rem;
+  }
+  .answer-divider {
+     margin: 0 0 12px 0; /* Full width divide on mobile */
+  }
 }
 </style>
 """
@@ -791,22 +816,13 @@ if "trigger_search" not in st.session_state:
     st.session_state["trigger_search"] = False
 
 if keywords:
-    st.markdown("#### Quick Filters (English Keywords)")
-    # Render chips in columns to simulate horizontal slicers
-    # (Streamlit does not have native PowerBI slicers; this is the closest UX.)
-    chip_cols = st.columns(6)  # tune 5–8 depending on your layout
-    for i, kw in enumerate(keywords[:24]):  # show first 24 chips
-        with chip_cols[i % 6]:
-            if st.button(kw, use_container_width=True):
-                st.session_state["query"] = kw
-                st.session_state["trigger_search"] = True
-
-    # Optional: show more keywords in an expander
-    with st.expander("More keywords"):
-        more_cols = st.columns(6)
-        for i, kw in enumerate(keywords[24:]):
-            with more_cols[i % 6]:
-                if st.button(kw, key=f"kw_more_{kw}", use_container_width=True):
+    with st.expander("Quick Filters (English Keywords)", expanded=False):
+        # Render chips in columns to simulate horizontal slicers
+        # (Streamlit does not have native PowerBI slicers; this is the closest UX.)
+        chip_cols = st.columns(6)  # tune 5–8 depending on your layout
+        for i, kw in enumerate(keywords):  # show all keywords inside expander
+            with chip_cols[i % 6]:
+                if st.button(kw, key=f"kw_{i}_{kw}", use_container_width=True):
                     st.session_state["query"] = kw
                     st.session_state["trigger_search"] = True
 else:
