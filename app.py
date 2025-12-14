@@ -321,61 +321,75 @@ st.markdown(CUSTOM_CSS, unsafe_allow_html=True)
 # BRANDED HEADER WITH PHOTOS
 # ============================================================
 
-# Helper to find image in likely locations
-def find_image(filename):
-    # Potential paths to check
+# ============================================================
+# BRANDED HEADER WITH PHOTOS
+# ============================================================
+# Hybrid approach: Try local file (Base64) -> Fallback to URL
+# ============================================================
+
+def get_img_src(filename, fallback_url):
+    """Returns a valid src string for an <img> tag (either base64 or URL)"""
+    # 1. Try finding local file
     candidates = [
-        filename,                                      # Root
-        os.path.join("static", filename),             # Static folder
-        os.path.join(SCRIPT_DIR, filename),           # Script dir
-        os.path.join(SCRIPT_DIR, "static", filename)  # Script dir/static
+        filename,
+        os.path.join("static", filename),
+        os.path.join(SCRIPT_DIR, filename),
+        os.path.join(SCRIPT_DIR, "static", filename)
     ]
+    
+    found_path = None
     for path in candidates:
         if os.path.exists(path):
-            return path
-    return None
+            found_path = path
+            break
+            
+    # 2. If found, convert to base64
+    if found_path:
+        try:
+            with open(found_path, "rb") as img_file:
+                b64_data = base64.b64encode(img_file.read()).decode()
+                return f"data:image/jpg;base64,{b64_data}"
+        except Exception as e:
+            pass # Failed to read, fall through to URL
+            
+    # 3. Fallback to external URL
+    return fallback_url
 
-header_col1, header_col2, header_col3 = st.columns([1, 3, 1])
+# Define image sources
+radha_krishna_src = get_img_src(
+    "radha_krishna.jpg", 
+    "https://upload.wikimedia.org/wikipedia/commons/thumb/9/9e/Radha_Krishna.jpg/320px-Radha_Krishna.jpg"
+)
 
-# Try to find images
-img_left = find_image("radha_krishna.jpg")
-img_right = find_image("vinod_baba.jpg")
+vinod_baba_src = get_img_src(
+    "vinod_baba.jpg",
+    "https://cdn-icons-png.flaticon.com/512/3659/3659973.png" # Placeholder if specific photo missing
+)
 
-# Fallback URLs if local files are missing (Generic alternatives)
-if not img_left:
-    img_left = "https://upload.wikimedia.org/wikipedia/commons/thumb/9/9e/Radha_Krishna.jpg/320px-Radha_Krishna.jpg" # Generic Radha Krishna
+# Render HTML Header
+st.markdown(f"""
+<style>@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap');</style>
+<div style="display: flex; align-items: center; justify-content: space-between; background: transparent; padding: 0; margin-bottom: 2rem; gap: 15px;">
+    <!-- Left Image -->
+    <div style="flex: 0 0 auto;">
+         <img src="{radha_krishna_src}" style="height: 110px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.2); object-fit: cover;">
+    </div>
     
-if not img_right:
-    # Use a generic Guru icon or Om symbol as fallback if specific photo is missing
-    img_right = "https://cdn-icons-png.flaticon.com/512/3659/3659973.png" # Generic Guru/Om icon
-
-with header_col1:
-    st.image(img_left, use_container_width=True)
-
-with header_col2:
-    st.markdown("""
-    <div style="text-align: center; padding: 15px; background: linear-gradient(135deg, rgba(255, 153, 51, 0.95), rgba(139, 0, 0, 0.95)); border-radius: 15px; color: white;">
-        <p style="margin: 0; font-weight: 700; font-size: 1.35rem; font-family: 'Poppins', sans-serif; line-height: 1.4;">
-            श्री श्री 108 श्री विनोद बाबाजी महाराज<br>
+    <!-- Center Text -->
+    <div style="flex: 1; text-align: center; padding: 10px 15px; background: linear-gradient(135deg, rgba(255, 153, 51, 0.95), rgba(139, 0, 0, 0.95)); border-radius: 15px; box-shadow: 0 4px 15px rgba(139, 0, 0, 0.3); color: white; display: flex; align-items: center; justify-content: center; height: 110px;">
+        <p style="margin: 0; font-weight: 700; font-size: 1.35rem; font-family: 'Poppins', sans-serif; letter-spacing: 0.5px; text-shadow: 1px 1px 3px rgba(0,0,0,0.3); line-height: 1.4;">
+            🙏 श्री श्री 108 श्री विनोद बाबाजी महाराज<br>
             <span style="font-size: 1.15rem;">Sri Sri 108 Sri Vinod Baba Ji Maharaj</span>
         </p>
     </div>
-    """, unsafe_allow_html=True)
+    
+    <!-- Right Image -->
+    <div style="flex: 0 0 auto;">
+         <img src="{vinod_baba_src}" style="height: 110px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.2); object-fit: cover;">
+    </div>
+</div>
+""", unsafe_allow_html=True)
 
-with header_col3:
-    st.image(img_right, use_container_width=True)
-
-st.markdown("<style>@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap');</style>", unsafe_allow_html=True)
-
-# Debug Expander (Hidden by default, useful for diagnostics)
-with st.sidebar.expander("🛠️ Debug Deployment", expanded=False):
-    st.write(f"CWD: {os.getcwd()}")
-    st.write(f"Script Dir: {SCRIPT_DIR}")
-    st.write("Files in CWD:", os.listdir('.'))
-    if os.path.exists("static"):
-        st.write("Files in static:", os.listdir('static'))
-    else:
-        st.write("❌ 'static' folder not found!")
 
 # ============================================================
 # GLOBAL TRANSLATE WIDGET
