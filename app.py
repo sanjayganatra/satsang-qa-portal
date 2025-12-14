@@ -320,76 +320,14 @@ st.markdown(CUSTOM_CSS, unsafe_allow_html=True)
 # ============================================================
 # BRANDED HEADER WITH PHOTOS
 # ============================================================
-
+# Using Streamlit columns for proper image display
 # ============================================================
-# BRANDED HEADER WITH PHOTOS
+# BRANDED HEADER WITH PHOTOS (Base64 Flexbox for Perfect Alignment)
 # ============================================================
-# Hybrid approach: Try local file (Base64) -> Fallback to URL
-# ============================================================
+img_left_b64 = get_base64_image("static/radha_krishna.jpg")
+img_right_b64 = get_base64_image("static/vinod_baba.jpg")
 
-def get_img_src(filename, fallback_url):
-    """Returns a valid src string for an <img> tag (either base64 or URL)"""
-    # 1. Try finding local file
-    candidates = [
-        filename,
-        os.path.join("static", filename),
-        os.path.join(SCRIPT_DIR, filename),
-        os.path.join(SCRIPT_DIR, "static", filename)
-    ]
-    
-    found_path = None
-    for path in candidates:
-        if os.path.exists(path):
-            found_path = path
-            break
-            
-    # 2. If found, convert to base64
-    if found_path:
-        try:
-            with open(found_path, "rb") as img_file:
-                b64_data = base64.b64encode(img_file.read()).decode()
-                return f"data:image/jpg;base64,{b64_data}"
-        except Exception as e:
-            pass # Failed to read, fall through to URL
-            
-    # 3. Fallback to external URL
-    return fallback_url
-
-# Define image sources
-radha_krishna_src = get_img_src(
-    "radha_krishna.jpg", 
-    "https://upload.wikimedia.org/wikipedia/commons/thumb/9/9e/Radha_Krishna.jpg/320px-Radha_Krishna.jpg"
-)
-
-vinod_baba_src = get_img_src(
-    "vinod_baba.jpg",
-    "https://cdn-icons-png.flaticon.com/512/3659/3659973.png" # Placeholder if specific photo missing
-)
-
-# Render HTML Header
-st.markdown(f"""
-<style>@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap');</style>
-<div style="display: flex; align-items: center; justify-content: space-between; background: transparent; padding: 0; margin-bottom: 2rem; gap: 15px;">
-    <!-- Left Image -->
-    <div style="flex: 0 0 auto;">
-         <img src="{radha_krishna_src}" style="height: 110px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.2); object-fit: cover;">
-    </div>
-    
-    <!-- Center Text -->
-    <div style="flex: 1; text-align: center; padding: 10px 15px; background: linear-gradient(135deg, rgba(255, 153, 51, 0.95), rgba(139, 0, 0, 0.95)); border-radius: 15px; box-shadow: 0 4px 15px rgba(139, 0, 0, 0.3); color: white; display: flex; align-items: center; justify-content: center; height: 110px;">
-        <p style="margin: 0; font-weight: 700; font-size: 1.35rem; font-family: 'Poppins', sans-serif; letter-spacing: 0.5px; text-shadow: 1px 1px 3px rgba(0,0,0,0.3); line-height: 1.4;">
-            🙏 श्री श्री 108 श्री विनोद बाबाजी महाराज<br>
-            <span style="font-size: 1.15rem;">Sri Sri 108 Sri Vinod Baba Ji Maharaj</span>
-        </p>
-    </div>
-    
-    <!-- Right Image -->
-    <div style="flex: 0 0 auto;">
-         <img src="{vinod_baba_src}" style="height: 110px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.2); object-fit: cover;">
-    </div>
-</div>
-""", unsafe_allow_html=True)
-
+st.markdown(f"""<style>@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap');</style><div style="display: flex; align-items: center; justify-content: space-between; background: transparent; padding: 0; margin-bottom: 2rem; gap: 15px;"><div style="flex: 0 0 auto;"><img src="data:image/jpg;base64,{img_left_b64}" style="height: 110px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.2);"></div><div style="flex: 1; text-align: center; padding: 10px 15px; background: linear-gradient(135deg, rgba(255, 153, 51, 0.95), rgba(139, 0, 0, 0.95)); border-radius: 15px; box-shadow: 0 4px 15px rgba(139, 0, 0, 0.3); color: white; display: flex; align-items: center; justify-content: center; height: 110px;"><p style="margin: 0; font-weight: 700; font-size: 1.35rem; font-family: 'Poppins', sans-serif; letter-spacing: 0.5px; text-shadow: 1px 1px 3px rgba(0,0,0,0.3); line-height: 1.4;">🙏 श्री श्री 108 श्री विनोद बाबाजी महाराज<br><span style="font-size: 1.15rem;">Sri Sri 108 Sri Vinod Baba Ji Maharaj</span></p></div><div style="flex: 0 0 auto;"><img src="data:image/jpg;base64,{img_right_b64}" style="height: 110px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.2);"></div></div>""", unsafe_allow_html=True)
 
 # ============================================================
 # GLOBAL TRANSLATE WIDGET
@@ -2416,4 +2354,3 @@ else:
         if goto != page:
             st.session_state["page"] = int(goto)
             st.rerun()
-
