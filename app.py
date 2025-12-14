@@ -4,6 +4,7 @@ import numpy as np
 import re
 import unicodedata
 import time
+import os
 
 from sklearn.metrics.pairwise import cosine_similarity
 from sentence_transformers import SentenceTransformer
@@ -12,11 +13,23 @@ from sentence_transformers import SentenceTransformer
 import google.generativeai as genai
 
 
+import base64
+
+def get_base64_image(image_path):
+    if os.path.exists(image_path):
+        with open(image_path, "rb") as img_file:
+            return base64.b64encode(img_file.read()).decode()
+    return ""
+
 # ============================================================
 # 1) PAGE CONFIG
 # ============================================================
 PAGE_TITLE = "Welcome to PriyaKunj"
 ICON = "🙏"
+
+# CRITICAL: Initialize default language to Hindi IMMEDIATELY
+if "view_lang" not in st.session_state:
+    st.session_state["view_lang"] = "Hindi"
 st.set_page_config(page_title=PAGE_TITLE, page_icon=ICON)
 
 # --- CSS ---
@@ -279,9 +292,33 @@ CUSTOM_CSS = """
         -ms-text-size-adjust: 100%;
       }
     }
+    
+    /* Hide Streamlit Menu, Footer, and GitHub Elements */
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
+    header {visibility: hidden;}
+    .viewerBadge_container__1QSob {display: none;}
+    .styles_viewerBadge__1yB5_ {display: none;}
+    button[title="View app source"] {display: none;}
+    a[href*="github"] {display: none !important;}
+    [data-testid="stToolbar"] {display: none;}
+    .stDeployButton {display: none;}
+
 </style>
 """
 st.markdown(CUSTOM_CSS, unsafe_allow_html=True)
+
+# ============================================================
+# BRANDED HEADER WITH PHOTOS
+# ============================================================
+# Using Streamlit columns for proper image display
+# ============================================================
+# BRANDED HEADER WITH PHOTOS (Base64 Flexbox for Perfect Alignment)
+# ============================================================
+img_left_b64 = get_base64_image("static/radha_krishna.jpg")
+img_right_b64 = get_base64_image("static/vinod_baba.jpg")
+
+st.markdown(f"""<style>@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap');</style><div style="display: flex; align-items: center; justify-content: space-between; background: transparent; padding: 0; margin-bottom: 2rem; gap: 15px;"><div style="flex: 0 0 auto;"><img src="data:image/jpg;base64,{img_left_b64}" style="height: 110px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.2);"></div><div style="flex: 1; text-align: center; padding: 10px 15px; background: linear-gradient(135deg, rgba(255, 153, 51, 0.95), rgba(139, 0, 0, 0.95)); border-radius: 15px; box-shadow: 0 4px 15px rgba(139, 0, 0, 0.3); color: white; display: flex; align-items: center; justify-content: center; height: 110px;"><p style="margin: 0; font-weight: 700; font-size: 1.35rem; font-family: 'Poppins', sans-serif; letter-spacing: 0.5px; text-shadow: 1px 1px 3px rgba(0,0,0,0.3); line-height: 1.4;">🙏 श्री श्री 108 श्री विनोद बाबाजी महाराज<br><span style="font-size: 1.15rem;">Sri Sri 108 Sri Vinod Baba Ji Maharaj</span></p></div><div style="flex: 0 0 auto;"><img src="data:image/jpg;base64,{img_right_b64}" style="height: 110px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.2);"></div></div>""", unsafe_allow_html=True)
 
 # ============================================================
 # GLOBAL TRANSLATE WIDGET
@@ -332,7 +369,10 @@ TRANSLATIONS = {
         "no_satsang_files": "No {lang} content found.",
         "satsang_instruction": "How to add content:",
         "select_topic": "Select {lang} Topic",
-        "viewing_file": "Viewing: {file}"
+        "viewing_file": "Viewing: {file}",
+        "nav_home": "Home",
+        "nav_search": "Search Q&A",
+        "nav_satsang": "Satsang Notes"
     },
     "Hindi": {
         "page_title": "प्रियाकुंज में आपका स्वागत है",
@@ -361,7 +401,10 @@ TRANSLATIONS = {
         "no_satsang_files": "{lang} सामग्री नहीं मिली।",
         "satsang_instruction": "सामग्री कैसे जोड़ें:",
         "select_topic": "{lang} विषय चुनें",
-        "viewing_file": "देख रहे हैं: {file}"
+        "viewing_file": "देख रहे हैं: {file}",
+        "nav_home": "मुख्य पृष्ठ",
+        "nav_search": "प्रश्नोत्तर खोज",
+        "nav_satsang": "सत्संग नोट्स"
     }
 }
 
@@ -1134,6 +1177,11 @@ if "view_lang" not in st.session_state:
 if "current_view" not in st.session_state:
     st.session_state["current_view"] = "home"
 
+# Deep Linking Logic
+if "satsang" in st.query_params:
+    st.session_state["current_view"] = "satsang"
+    st.session_state["deep_linked_satsang"] = st.query_params["satsang"]
+
 # Language Toggle (Top Right or Sidebar - keeping consistent with previous UX)
 # usage: we will render the radio button later, but we need the value now.
 # Note: Streamlit widgets return the value *after* interaction, 
@@ -1148,8 +1196,25 @@ if "current_view" not in st.session_state:
 # HOME PAGE LOGIC
 # ============================================================
 def render_home_page(lang):
-    t_title = get_text("page_title", lang)
-    t_sub = get_text("home_subtitle", lang)
+    # Language Toggle at top right of page
+    col_space, col_lang = st.columns([3, 1])
+    with col_lang:
+        selected_lang = st.radio(
+            "भाषा / Language",
+            ["हिंदी", "English"],
+            index=0 if st.session_state["view_lang"] == "Hindi" else 1,
+            horizontal=True,
+            key="home_lang_toggle"
+        )
+        new_lang = "Hindi" if selected_lang == "हिंदी" else "English"
+        if new_lang != st.session_state["view_lang"]:
+            st.session_state["view_lang"] = new_lang
+            st.rerun()
+    
+    # Use the CURRENT session state value for text (reflects any toggle change)
+    current_lang = st.session_state["view_lang"]
+    t_title = get_text("page_title", current_lang)
+    t_sub = get_text("home_subtitle", current_lang)
     
     st.markdown(f"""
     <div style="text-align: center; padding: 40px 20px;">
@@ -1164,22 +1229,24 @@ def render_home_page(lang):
     with c1:
         st.markdown(f"""
         <div class="answer-card" style="text-align: center; min-height: 250px; display: flex; flex-direction: column; justify-content: center; align-items: center; cursor: pointer;">
-            <h2 style="color: #FF8000; margin-top: 0;">{get_text('ask_question_title', lang)}</h2>
-            <p style="color: #3E2723; margin-bottom: 0;">{get_text('ask_question_desc', lang)}</p>
+            <h2 style="color: #FF8000; margin-top: 0;">{get_text('ask_question_title', current_lang)}</h2>
+            <p style="color: #3E2723; margin-bottom: 20px;">{get_text('ask_question_desc', current_lang)}</p>
         </div>
         """, unsafe_allow_html=True)
-        if st.button(get_text('ask_question_btn', lang), use_container_width=True):
+        
+        if st.button("👆 यहाँ क्लिक करें / Click Here", use_container_width=True, key="home_card_qa"):
             st.session_state["current_view"] = "qa"
             st.rerun()
 
     with c2:
         st.markdown(f"""
         <div class="answer-card" style="text-align: center; min-height: 250px; display: flex; flex-direction: column; justify-content: center; align-items: center; cursor: pointer;">
-            <h2 style="color: #FF8000; margin-top: 0;">{get_text('satsang_title', lang)}</h2>
-            <p style="color: #3E2723; margin-bottom: 0;">{get_text('satsang_desc', lang)}</p>
+            <h2 style="color: #FF8000; margin-top: 0;">{get_text('satsang_title', current_lang)}</h2>
+            <p style="color: #3E2723; margin-bottom: 20px;">{get_text('satsang_desc', current_lang)}</p>
         </div>
         """, unsafe_allow_html=True)
-        if st.button(get_text('satsang_btn', lang), use_container_width=True):
+        
+        if st.button("👆 यहाँ क्लिक करें / Click Here", use_container_width=True, key="home_card_satsang"):
             st.session_state["current_view"] = "satsang"
             st.rerun()
 
@@ -1187,6 +1254,30 @@ def render_home_page(lang):
 # SATSANG (BLOG) PAGE LOGIC
 # ============================================================
 import os
+
+
+def extract_share_content(html_content):
+    """Parses HTML content to extract headers and questions for sharing."""
+    import re
+    # Find h2, h3 headers
+    headers = re.findall(r'<h[23][^>]*>(.*?)</h[23]>', html_content)
+    # Find lines ending with ? inside p tags or just lines
+    questions = re.findall(r'<p[^>]*>(.*?\?)</p>', html_content)
+    
+    # Clean tags
+    cleaned = []
+    seen = set()
+    
+    # Prioritize headers then questions
+    raw_items = headers + questions
+    
+    for item in raw_items:
+        text = re.sub(r'<[^>]+>', '', item).strip()
+        if text and len(text) > 5 and text not in seen:
+            cleaned.append(text)
+            seen.add(text)
+            
+    return cleaned[:5]  # Return top 5 interesting points
 
 def preprocess_html_for_markdown(html_content: str) -> str:
     """
@@ -1198,6 +1289,11 @@ def preprocess_html_for_markdown(html_content: str) -> str:
     return "\n".join(line.lstrip() for line in lines)
 
 def render_satsang_page(view_lang):
+    # Check for Deep Link
+    if "satsang" in st.query_params:
+        target_satsang = st.query_params["satsang"]
+        st.session_state["deep_linked_satsang"] = target_satsang
+    
     # Google Translate Widget (per user request)
     translate_css = """
     <style>
@@ -1226,10 +1322,21 @@ def render_satsang_page(view_lang):
     <script type="text/javascript" src="https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
     """
 
-    c_head, c_trans = st.columns([3, 1])
-    with c_head:
-        t_title = get_text("satsang_title", view_lang)
-        st.markdown(f'<h2 style="text-align: left; color: #8B0000; margin: 0;">{ICON} {t_title}</h2>', unsafe_allow_html=True)
+    # Page Title - Above navigation
+    t_title = get_text("satsang_title", view_lang)
+    st.markdown(f'<h2 style="text-align: center; color: #8B0000; margin: 0 0 15px 0;">{t_title}</h2>', unsafe_allow_html=True)
+    
+    # Navigation Buttons - Equal size columns
+    c_home, c_search, c_trans = st.columns([1, 1, 1])
+    with c_home:
+        if st.button(get_text("nav_home", view_lang), use_container_width=True, key="satsang_home_btn"):
+            st.session_state["current_view"] = "home"
+            st.rerun()
+    
+    with c_search:
+        if st.button(get_text("nav_search", view_lang), use_container_width=True, key="satsang_search_btn"):
+            st.session_state["current_view"] = "qa"
+            st.rerun()
         
     with c_trans:
         st.markdown(translate_css + translate_widget, unsafe_allow_html=True)
@@ -1296,18 +1403,52 @@ def render_satsang_page(view_lang):
         files_by_group[g].append(f)
         
     # 3. ARCHIVE SELECTOR UI
+    
+    # Check for Deep Link Match
+    default_group_idx = 0
+    default_file_idx = 0
+    
+    if "deep_linked_satsang" in st.session_state:
+        target = st.session_state["deep_linked_satsang"]
+        for g_idx, group_name in enumerate(groups):
+            g_files = files_by_group[group_name]
+            for f_idx, f in enumerate(g_files):
+                if f["filename"] == target:
+                    default_group_idx = g_idx
+                    default_file_idx = f_idx
+                    # Clear it so navigation works normally after
+                    del st.session_state["deep_linked_satsang"]
+                    break
+            else:
+                continue
+            break
+            
     c_month, c_topic = st.columns([1, 2])
     
     with c_month:
         st.markdown("**🗓️ Archives**")
-        selected_group = st.selectbox("Select Month", groups, index=0, label_visibility="collapsed")
+        selected_group = st.selectbox(
+            "Select Month", 
+            groups, 
+            index=default_group_idx,
+            label_visibility="collapsed"
+        )
         
     with c_topic:
         st.markdown("**📖 Select Topic**")
         filtered_files = files_by_group[selected_group]
         # Map full titles to indices
         file_options = {f["full_title"]: i for i, f in enumerate(filtered_files)}
-        selected_title = st.selectbox("Topic", list(file_options.keys()), index=0, label_visibility="collapsed")
+        
+        # Ensure default file index is valid for the selected group
+        current_file_idx = default_file_idx if groups[default_group_idx] == selected_group else 0
+        
+        selected_title = st.selectbox(
+            "Topic", 
+            list(file_options.keys()), 
+            index=min(current_file_idx, len(filtered_files)-1),
+            label_visibility="collapsed"
+        )
         
     selected_file_data = filtered_files[file_options[selected_title]]
     file_path = selected_file_data["path"]
@@ -1317,17 +1458,113 @@ def render_satsang_page(view_lang):
         with open(file_path, "r", encoding="utf-8") as f:
             raw_content = f.read()
             
-        # 4. RENDER CONTENT (IFRAME ISOLATION - Full Height)
+        # 4. RENDER CONTENT (IFRAME ISOLATION - Dynamic Height)
         # Using components.html creates a sandboxed iframe. 
         # This solves ALL scope issues (const redeclaration), ID collisions, and script execution failures.
         import streamlit.components.v1 as components
         
-        # Use very generous height to ensure all content visible without scrollbar
-        # This accommodates varying content lengths across different files
-        iframe_height = 2500 
+        # ENHANCED resize script - aggressively monitors for content changes
+        # This ensures minimal white space for both Short and Long options
+        auto_resize_script = """
+<script>
+(function() {
+    var lastHeight = 0;
+    var resizeAttempts = 0;
+    var maxAttempts = 15;
+    
+    function notifyResize() {
+        // Ensure body/html allow expansion
+        document.body.style.height = 'auto';
+        document.documentElement.style.height = 'auto';
         
-        # Disable scrollbar for clean appearance
-        components.html(raw_content, height=iframe_height, scrolling=False)
+        // Get actual content height with generous padding
+        var body = document.body;
+        var html = document.documentElement;
+        var height = Math.max(
+            body.scrollHeight,
+            body.offsetHeight,
+            html.clientHeight,
+            html.scrollHeight,
+            html.offsetHeight
+        ) + 100;  // Extra padding to prevent cutoff
+        
+        // Only notify if height changed significantly
+        if (Math.abs(height - lastHeight) > 10) {
+            lastHeight = height;
+            window.parent.postMessage({
+                type: "streamlit:setFrameHeight",
+                height: height
+            }, "*");
+            console.log("Resized to:", height);
+        }
+        
+        resizeAttempts++;
+    }
+    
+    // MutationObserver to detect DOM changes (Short/Long toggle)
+    var observer = new MutationObserver(function(mutations) {
+        // Reset attempts counter on mutation
+        resizeAttempts = 0;
+        setTimeout(notifyResize, 100);
+        setTimeout(notifyResize, 400);
+        setTimeout(notifyResize, 800);
+    });
+    
+    // Observe entire body for changes including subtrees
+    observer.observe(document.body, {
+        childList: true,
+        subtree: true,
+        attributes: true,
+        characterData: true
+    });
+    
+    // Click handler for toggle buttons
+    document.addEventListener('click', function(e) {
+        resizeAttempts = 0;
+        setTimeout(notifyResize, 200);
+        setTimeout(notifyResize, 500);
+        setTimeout(notifyResize, 1000);
+    }, true);
+    
+    // Window resize handler
+    window.addEventListener('resize', function() {
+        setTimeout(notifyResize, 100);
+    });
+    
+    // Force initial resize
+    notifyResize();
+    setTimeout(notifyResize, 500);
+    setTimeout(notifyResize, 1500);
+    setTimeout(notifyResize, 3000);
+    
+    // Periodic check (backup)
+    var periodicCheck = setInterval(function() {
+        if (resizeAttempts < maxAttempts) {
+            notifyResize();
+        } else {
+            clearInterval(periodicCheck);
+        }
+    }, 1000);
+})();
+</script>
+</body>
+"""
+        
+        # Inject script before closing body tag
+        if "</body>" in raw_content:
+            raw_content = raw_content.replace("</body>", auto_resize_script)
+        
+        # Estimate height - balanced to fit content without scrolling or excess whitespace
+        import re
+        text_only = re.sub(r'<[^>]+>', '', raw_content)
+        text_length = len(text_only)
+        
+        # Lower multiplier to minimize whitespace
+        # Minimum 400px, Maximum 2500px
+        estimated_height = max(400, min(2500, int(text_length * 0.15)))
+        
+        # 0.15 multiplier with scrolling for overflow
+        components.html(raw_content, height=estimated_height, scrolling=True)
         
         # 5. SOCIAL / ENGAGEMENT UI (Below the content)
         st.markdown("---")
@@ -1343,18 +1580,53 @@ def render_satsang_page(view_lang):
                 st.session_state[like_key] = not st.session_state[like_key]
                 st.rerun()
                 
-        # Social Share Links
+        # Social Share Links - Enhanced Format
         with c_share:
-            # We can't get real URL in Streamlit easily, so we share a generic msg + Title
-            share_text = f"Read this beautiful Satsang: {selected_file_data['full_title']}"
+            # Rich metadata for cross-platform compatibility
+            content_highlights = extract_share_content(raw_content)
+            highlights_text = "\n".join([f"✨ {h}" for h in content_highlights])
+            
+            # Construct Deep Link
+            # TODO: Update this URL after deploying to Streamlit Cloud
+            # For local testing, use localhost; for production, use your deployed URL
+            base_url = "http://localhost:8502"  # Change to your Streamlit Cloud URL after deployment
+            share_link = f"{base_url}/?satsang={selected_file_data['filename']}"
+            
+            share_text = f"""🙏 *{selected_file_data['full_title']}*
+
+📅 {selected_file_data.get('date_str', '')}
+📍 प्रियाकुंज आश्रम, बरसाना
+
+🔍 *मुख्य अंश / Highlights:*
+{highlights_text}
+
+🔗 *पूरा सत्संग पढ़ें / Read Full:*
+{share_link}
+
+🕉️ जय श्री राधे""".strip()
             import urllib.parse
             safe_text = urllib.parse.quote(share_text)
             
+            # Generate unique ID for this share link
+            link_id = f"link_{selected_file_data['filename'].replace('.', '_')}"
+            
             st.markdown(f"""
-            <div style="display:flex; gap:10px; align-items:center;">
-                <a href="https://wa.me/?text={safe_text}" target="_blank" style="text-decoration:none; font-size:1.2rem;">🟢 WhatsApp</a>
+            <div style="display:flex; gap:10px; align-items:center; flex-wrap: wrap; margin-bottom: 10px;">
+                <a href="https://wa.me/?text={safe_text}" target="_blank" style="text-decoration:none; font-size:1rem; background: #25D366; color: white; padding: 8px 15px; border-radius: 20px; font-weight: bold; border: 1px solid #128C7E;">
+                    🟢 Share on WhatsApp
+                </a>
             </div>
             """, unsafe_allow_html=True)
+            
+            # Use Streamlit columns for Copy Link functionality
+            col_copy, col_link = st.columns([1, 3])
+            with col_copy:
+                if st.button("📋 Copy Link", key="copy_link_btn"):
+                    st.session_state["copied_link"] = share_link
+                    st.toast("✅ Link copied! Use Ctrl+V to paste", icon="📋")
+            
+            with col_link:
+                st.code(share_link, language=None)
             
         # Comments (CSV Storage) - Full Width
         st.markdown("") # Spacer
@@ -1479,7 +1751,7 @@ st.markdown("""
 # ============================================================
 # GLOBAL SIDEBAR & NAVIGATION
 # ============================================================
-# Initialize default language to Hindi
+# CRITICAL: Initialize default language to Hindi FIRST
 if "view_lang" not in st.session_state:
     st.session_state["view_lang"] = "Hindi"
 
@@ -1495,30 +1767,14 @@ with st.sidebar:
     
     st.markdown("---")
 
-    # --- GLOBAL AI SETTINGS (Required for Index Build) ---
-    st.sidebar.header("AI Settings")
-    provider = st.sidebar.radio("AI Provider", ["Local (Free)", "Google Gemini"], index=1, key="ai_provider_radio_global")
     
+    # --- HIDDEN AI SETTINGS (Using optimal defaults) ---
+    # All AI config hidden from users - using Google Gemini with secrets
+    provider = "Google Gemini"  # Fixed to best option
     api_key = st.secrets.get("GOOGLE_API_KEY", "")
-    if provider == "Google Gemini":
-        if api_key:
-            st.sidebar.success("API Key loaded from secrets")
-        else:
-            api_key = st.sidebar.text_input("Google API Key", type="password")
     st.sidebar.markdown("---")
     
-    # Language Toggle (Global)
-    # Hide on Satsang page as per user request
-    if st.session_state.get("current_view") != "satsang":
-        lang_label = get_text("view_lang_label", st.session_state["view_lang"])
-        
-        # We force the radio to use the session state value
-        st.radio(
-            lang_label, 
-            ["Hindi", "English"], 
-            key="view_lang",
-            horizontal=True
-        )
+    # Language Toggle removed from sidebar - now on each page directly
 
 
 # Capture current language for local usage
@@ -1556,31 +1812,18 @@ elif st.session_state["current_view"] == "satsang":
 # ============================================================
 # Q/A APP LOGIC (Only runs if current_view == 'qa')
 # ============================================================
-st.sidebar.markdown("---")
-st.sidebar.header("Settings")
-# page_size moved to main area
-if "page" not in st.session_state:
-    st.session_state["page"] = 1
+# ============================================================
+# SEARCH SETTINGS (Simplified for End Users)
+# ============================================================
+# All technical settings are now hidden - using optimal defaults
 
-# page_size moved to main area
-if "page" not in st.session_state:
-    st.session_state["page"] = 1
-
-# Provider settings moved to global sidebar above
-
-search_mode = st.sidebar.radio(
-    "Search Mode",
-    ["Hybrid (Recommended)", "Semantic Only", "Literal Only"],
-    index=0,
-    key="search_mode_radio"
-)
-use_phrase_match = st.sidebar.checkbox("Prefer exact phrase for short queries", value=True)
-top_k = st.sidebar.slider("Semantic candidates (Top-K)", 10, 200, 40, step=10)
-
-short_query_requires_lex = st.sidebar.checkbox("Short query must match (expanded) tokens", value=True)
-semantic_weight = st.sidebar.slider("Hybrid weight (semantic)", 0.0, 1.0, 0.75, 0.05)
-
-HIGH_SEM_OVERRIDE = st.sidebar.slider("Short-query semantic override threshold", 0.0, 1.0, 0.62, 0.01)
+# Hidden defaults - no UI exposed
+search_mode = "Hybrid (Recommended)"  # Best balance
+use_phrase_match = True
+top_k = 40
+short_query_requires_lex = True
+semantic_weight = 0.75
+HIGH_SEM_OVERRIDE = 0.62
 
 lbl_translate = get_text("translate_toggle", view_lang)
 enable_translation_bridge = st.sidebar.checkbox(lbl_translate, value=True)
@@ -1593,9 +1836,51 @@ debug_mode = st.sidebar.checkbox(lbl_debug, value=False)
 lbl_loaded = get_text("conversations_loaded", view_lang, count=len(df))
 st.sidebar.info(lbl_loaded)
 
-# --- SLICERS ---
+# Session keys used for auto-search
+if "query" not in st.session_state:
+    st.session_state["query"] = ""
+if "trigger_search" not in st.session_state:
+    st.session_state["trigger_search"] = False
 
-# --- SLICERS ---
+# ============================================================
+# Search Page Header: Title + Navigation Buttons + Language Toggle
+# ============================================================
+# Page Title - Above navigation
+st.markdown(f'<h2 style="text-align: center; color: #8B0000; margin: 0 0 15px 0;">{get_text("ask_question_title", view_lang)}</h2>', unsafe_allow_html=True)
+
+# Navigation Buttons on left, Language toggle on right
+col_home, col_satsang, col_spacer, col_lang = st.columns([1, 1, 1, 1])
+with col_home:
+    if st.button(get_text("nav_home", view_lang), use_container_width=True, key="qa_home_btn"):
+        st.session_state["current_view"] = "home"
+        st.rerun()
+
+with col_satsang:
+    if st.button(get_text("nav_satsang", view_lang), use_container_width=True, key="qa_satsang_btn"):
+        st.session_state["current_view"] = "satsang"
+        st.rerun()
+
+# col_spacer is empty - just for spacing
+        
+with col_lang:
+    selected_lang = st.radio(
+        "भाषा / Language",
+        ["हिंदी", "English"],
+        index=0 if st.session_state["view_lang"] == "Hindi" else 1,
+        horizontal=True,
+        key="search_lang_toggle"
+    )
+    new_lang = "Hindi" if selected_lang == "हिंदी" else "English"
+    if new_lang != st.session_state["view_lang"]:
+        st.session_state["view_lang"] = new_lang
+        st.rerun()
+
+# Update view_lang for rest of page
+view_lang = st.session_state["view_lang"]
+
+st.markdown("---")
+
+# --- QUICK FILTERS (below navigation) ---
 if view_lang == "English":
     kw_col = pick_english_source_column(df)
     keywords = extract_top_keywords(df, kw_col, top_n=30) if kw_col else []
@@ -1604,12 +1889,6 @@ else:
     # Hindi keywords
     keywords = extract_hindi_keywords(df, top_n=30)
     slicer_label = get_text("slicer_label_hi", view_lang)
-
-# Session keys used for auto-search
-if "query" not in st.session_state:
-    st.session_state["query"] = ""
-if "trigger_search" not in st.session_state:
-    st.session_state["trigger_search"] = False
 
 if keywords:
     with st.expander(slicer_label, expanded=False):
@@ -1623,6 +1902,27 @@ else:
     if view_lang == "English":
         st.caption("No English keyword column found for slicers.")
 
+# Search Options
+col_mode = st.columns([1])[0]
+
+with col_mode:
+    # Override the hidden default with user selection
+    search_mode = st.radio(
+        "खोज प्रकार / Search Type",
+        ["🔀 स्मार्ट खोज / Smart Search", "🧠 अर्थ-आधारित / Meaning-Based", "📝 शब्द-आधारित / Word-Match"],
+        index=0,
+        horizontal=True,
+        help="स्मार्ट खोज सबसे अच्छा परिणाम देता है / Smart Search gives best results"
+    )
+    # Map to internal format
+    if "स्मार्ट" in search_mode or "Smart" in search_mode:
+        search_mode = "Hybrid (Recommended)"
+    elif "अर्थ" in search_mode or "Meaning" in search_mode:
+        search_mode = "Semantic Only"
+    else:
+        search_mode = "Literal Only"
+
+st.markdown("")
 lbl_ask = get_text("ask_question_title", view_lang)
 query = st.text_input(lbl_ask, placeholder="e.g., I am Sick / छीन लेना / नाम जप नहीं हो रहा", key="query"
 )
@@ -1761,6 +2061,70 @@ else:
     
 current_mode = st.session_state.get("mode", "search")
 
+# ============================================================
+# SEMANTIC VISUALIZATION HELPERS
+# ============================================================
+def extract_key_concepts(text, max_concepts=5):
+    """Extract key concepts/phrases from text, filtering stopwords"""
+    import re
+    # Clean and split
+    words = re.findall(r'\b[a-zA-Z\u0900-\u097F]{3,}\b', text.lower())
+    # Filter common stopwords
+    stopwords = {'the', 'and', 'for', 'are', 'but', 'not', 'you', 'all', 'can', 'had', 'her', 'was', 'one', 'our', 'out', 'has', 'have', 'been', 'were', 'being', 'there', 'this', 'that', 'with', 'they', 'from', 'what', 'which', 'when', 'how', 'why', 'who', 'will', 'would', 'could', 'should', 'about', 'into', 'through', 'during', 'before', 'after', 'above', 'below', 'between', 'under', 'again', 'further', 'then', 'once', 'here', 'there', 'where', 'than', 'too', 'very', 'just', 'only', 'now', 'की', 'के', 'का', 'में', 'है', 'हैं', 'को', 'से', 'पर', 'और', 'यह', 'इस', 'कि', 'जो', 'तो', 'भी', 'ने', 'एक', 'हो', 'या', 'था', 'थे', 'थी', 'अपने', 'किया', 'करना', 'किसी', 'कर', 'करें', 'होता', 'होती', 'होते', 'रहा', 'रही', 'रहे', 'गया', 'गई', 'गए', 'जाता', 'जाती', 'जाते'}
+    filtered = [w for w in words if w not in stopwords]
+    # Get unique, preserving order
+    seen = set()
+    unique = []
+    for w in filtered:
+        if w not in seen:
+            seen.add(w)
+            unique.append(w)
+    return unique[:max_concepts]
+
+def compute_sentence_relevance(query, text, embedder=None, embeddings_cache=None):
+    """Split text into sentences and compute relevance score for each"""
+    import re
+    # Split by Hindi and English sentence delimiters
+    sentences = re.split(r'[।.!?\n]+', text)
+    sentences = [s.strip() for s in sentences if len(s.strip()) > 10]
+    
+    if not sentences:
+        return []
+    
+    # Simple keyword-based relevance (works without embeddings)
+    query_words = set(re.findall(r'\b[a-zA-Z\u0900-\u097F]{2,}\b', query.lower()))
+    
+    scored = []
+    for sent in sentences[:10]:  # Limit to first 10 sentences
+        sent_words = set(re.findall(r'\b[a-zA-Z\u0900-\u097F]{2,}\b', sent.lower()))
+        overlap = len(query_words & sent_words)
+        relevance = min(1.0, overlap / max(1, len(query_words)))
+        scored.append((sent, relevance))
+    
+    return sorted(scored, key=lambda x: x[1], reverse=True)
+
+def generate_relevance_heatmap_html(sentences_with_scores, max_sentences=5):
+    """Generate HTML with color-coded sentences based on relevance"""
+    html_parts = []
+    for sent, score in sentences_with_scores[:max_sentences]:
+        # Color gradient: low relevance = light, high relevance = bright yellow
+        if score > 0.5:
+            bg_color = "#FFEB3B"  # Bright yellow - high match
+            border = "2px solid #FFC107"
+        elif score > 0.2:
+            bg_color = "#FFF9C4"  # Light yellow - moderate match
+            border = "1px solid #FFEB3B"
+        else:
+            bg_color = "#FFFDE7"  # Very light - low match
+            border = "1px solid #FFF9C4"
+        
+        html_parts.append(f'''
+        <div style="padding: 8px 12px; margin: 4px 0; background: {bg_color}; border: {border}; border-radius: 8px;">
+            <span style="font-size: 0.8rem; color: #666;">({score:.0%})</span> {sent[:200]}{'...' if len(sent) > 200 else ''}
+        </div>''')
+    
+    return "".join(html_parts)
+
 def render_result_card(idx_num, row, final, sem, lex, method, show_translated_answer: bool, debug_mode: bool, view_lang: str):
     # Determine text based on language selection
     if view_lang == "English":
@@ -1774,6 +2138,135 @@ def render_result_card(idx_num, row, final, sem, lex, method, show_translated_an
     # (Do not remove Hindi punctuation; keep line breaks)
     safe_a = a_text
 
+    # Build match reasoning HTML (if applicable)
+    match_reasoning_html = ""
+    if method != "Browse":
+        query = st.session_state.get("query", "")
+        
+        # Context Check: Where did the match happen?
+        q_raw = str(row.get("Question", "")).lower()
+        a_raw = str(row.get("Answer", "")).lower()
+        q_display = str(row.get("Question", ""))
+        a_display = str(row.get("Answer", ""))
+        query_words = [w for w in query.lower().split() if len(w) > 2]
+        
+        found_in_q = [w for w in query_words if w in q_raw]
+        found_in_a = [w for w in query_words if w in a_raw]
+        
+        # Highlight matching words in Q and A text
+        def highlight_keywords(text, keywords):
+            """Wrap matching keywords with highlight span"""
+            highlighted = text
+            for kw in keywords:
+                # Case-insensitive replacement with highlight
+                import re
+                pattern = re.compile(f'({re.escape(kw)})', re.IGNORECASE)
+                highlighted = pattern.sub(r'<mark style="background: #FFEB3B; padding: 1px 3px; border-radius: 3px;">\1</mark>', highlighted)
+            return highlighted
+        
+        # Apply highlighting
+        if found_in_q:
+            q_text = highlight_keywords(q_text, found_in_q)
+        if found_in_a:
+            safe_a = highlight_keywords(safe_a, found_in_a)
+        
+        context_str = ""
+        context_str_hi = ""
+        matched_text_snippet = ""
+        
+        # Extract a relevant snippet from Q or A that contains query words
+        if found_in_q or found_in_a:
+            # Find which text has more matches
+            if len(found_in_q) >= len(found_in_a) and found_in_q:
+                # Show snippet from Question
+                snippet_src = q_display[:150] + "..." if len(q_display) > 150 else q_display
+                matched_text_snippet = f'📄 **Matched in Question:** "{snippet_src}"'
+            elif found_in_a:
+                # Show snippet from Answer  
+                snippet_src = a_display[:150] + "..." if len(a_display) > 150 else a_display
+                matched_text_snippet = f'📄 **Matched in Answer:** "{snippet_src}"'
+        
+        if found_in_q and found_in_a:
+            context_str = f"Keywords found in **Question & Answer**: {', '.join(set(found_in_q + found_in_a))}"
+            context_str_hi = f"प्रश्न और उत्तर दोनों में शब्द मिले: {', '.join(set(found_in_q + found_in_a))}"
+        elif found_in_q:
+            context_str = f"Keywords found in **Question**: {', '.join(found_in_q)}"
+            context_str_hi = f"प्रश्न में शब्द मिले: {', '.join(found_in_q)}"
+        elif found_in_a:
+            context_str = f"Keywords found in **Answer**: {', '.join(found_in_a)}"
+            context_str_hi = f"उत्तर में शब्द मिले: {', '.join(found_in_a)}"
+        else:
+            # For pure semantic matches, show what text was compared
+            snippet_src = q_display[:100] + "..." if len(q_display) > 100 else q_display
+            matched_text_snippet = f'📄 **Compared with Question:** "{snippet_src}"'
+        
+        # Score breakup for display
+        score_breakup = ""
+        score_breakup_hi = ""
+        if method == "Hybrid" and lex > 0:
+            score_breakup = f"📊 **Score Breakup:** Total={final:.0%} (Semantic: {sem:.0%} + Lexical: {lex:.0%})"
+            score_breakup_hi = f"📊 **स्कोर विवरण:** कुल={final:.0%} (अर्थ: {sem:.0%} + शब्द: {lex:.0%})"
+        
+        # Build query display
+        query_display = f'🔍 **Your Search:** "{query}"'
+        query_display_hi = f'🔍 **आपकी खोज:** "{query}"'
+        
+        # Highlight matched words in display
+        matched_words_html = ""
+        if found_in_q or found_in_a:
+            all_matched = list(set(found_in_q + found_in_a))
+            highlighted_words = " ".join([f'<mark style="background: #FFEB3B; padding: 2px 6px; border-radius: 4px; font-weight: bold;">{w}</mark>' for w in all_matched])
+            matched_words_html = f"<br><br>🎯 <b>Matched Words:</b> {highlighted_words}"
+            matched_words_hi = f"<br><br>🎯 <b>मिलान शब्द:</b> {highlighted_words}"
+        else:
+            matched_words_hi = ""
+            
+        # Create detailed user-friendly explanation
+        if method == "Semantic" or (method == "Hybrid" and lex == 0):
+            reason_icon = "🧠"
+            if view_lang == "Hindi":
+                reason_text = f"{query_display_hi}\\n\\n**अर्थ-आधारित खोज** ({sem:.0%} समानता)\\n\\nआपके प्रश्न का अर्थ इससे मेल खाता है।"
+                if matched_text_snippet: 
+                    reason_text += f"\\n\\n📄 **प्रश्न से मिलान:** \"{q_display[:120]}...\""
+            else:
+                reason_text = f"{query_display}\\n\\n**Meaning-Based Match** ({sem:.0%} similarity)\\n\\nYour query's meaning aligns with this result."
+                if context_str: reason_text += f"\\n{context_str}"
+                if matched_text_snippet: reason_text += f"\\n\\n{matched_text_snippet}"
+                
+        elif method == "Literal Only" or (method == "Hybrid" and lex > 0 and sem < 0.3):
+            reason_icon = "📝"
+            if view_lang == "Hindi":
+                reason_text = f"{query_display_hi}\\n\\n**शब्द-आधारित खोज**\\n\\n{context_str_hi if context_str_hi else 'सीधा शब्द मिलान'}"
+            else:
+                reason_text = f"{query_display}\\n\\n**Keyword Match**\\n\\n{context_str if context_str else 'Direct keyword match'}"
+                if matched_text_snippet: reason_text += f"\\n\\n{matched_text_snippet}"
+        else:  # Hybrid
+            reason_icon = "🔀"
+            if view_lang == "Hindi":
+                reason_text = f"{query_display_hi}\\n\\n**स्मार्ट खोज** ({final:.0%})\\n\\n✓ अर्थ मेल खाता है ({sem:.0%})"
+                if context_str_hi: reason_text += f"\\n✓ {context_str_hi}"
+                if score_breakup_hi: reason_text += f"\\n\\n{score_breakup_hi}"
+            else:
+                reason_text = f"{query_display}\\n\\n**Smart Match** ({final:.0%})\\n\\n✓ Meaning matches ({sem:.0%})"
+                if context_str: reason_text += f"\\n✓ {context_str}"
+                if score_breakup: reason_text += f"\\n\\n{score_breakup}"
+                if matched_text_snippet: reason_text += f"\\n\\n{matched_text_snippet}"
+        
+        # Convert markdown to simple HTML
+        reason_html = reason_text.replace("\\n\\n", "<br><br>").replace("\\n", "<br>").replace("**", "")
+        
+        # Add highlighted matched words
+        if view_lang == "Hindi" and matched_words_hi:
+            reason_html += matched_words_hi
+        elif matched_words_html:
+            reason_html += matched_words_html
+            
+        match_reasoning_html = f"""
+  <details style="margin-top: 10px; padding: 8px; background: rgba(255,153,51,0.1); border-radius: 8px; cursor: pointer;">
+    <summary style="font-weight: 600; color: #8B0000; font-size: 0.9rem;">{reason_icon} Why this answer? / यह उत्तर क्यों?</summary>
+    <div style="margin-top: 8px; font-size: 0.85rem; color: #4E342E; line-height: 1.5;">{reason_html}</div>
+  </details>"""
+    
     st.markdown(
         f'''<div class="answer-card">
   <div class="answer-header">
@@ -1787,6 +2280,7 @@ def render_result_card(idx_num, row, final, sem, lex, method, show_translated_an
     <div class="answer-label">Ans</div>
     <div class="answer-a">{safe_a}</div>
   </div>
+  {match_reasoning_html}
 </div>''',
         unsafe_allow_html=True
     )
