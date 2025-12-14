@@ -320,17 +320,37 @@ st.markdown(CUSTOM_CSS, unsafe_allow_html=True)
 # ============================================================
 # BRANDED HEADER WITH PHOTOS
 # ============================================================
-# Using Streamlit columns for proper image display on cloud deployment
-# ============================================================
+
+# Helper to find image in likely locations
+def find_image(filename):
+    # Potential paths to check
+    candidates = [
+        filename,                                      # Root
+        os.path.join("static", filename),             # Static folder
+        os.path.join(SCRIPT_DIR, filename),           # Script dir
+        os.path.join(SCRIPT_DIR, "static", filename)  # Script dir/static
+    ]
+    for path in candidates:
+        if os.path.exists(path):
+            return path
+    return None
+
 header_col1, header_col2, header_col3 = st.columns([1, 3, 1])
 
-# Image paths relative to script
-img_left_path = os.path.join(SCRIPT_DIR, "static", "radha_krishna.jpg")
-img_right_path = os.path.join(SCRIPT_DIR, "static", "vinod_baba.jpg")
+# Try to find images
+img_left = find_image("radha_krishna.jpg")
+img_right = find_image("vinod_baba.jpg")
+
+# Fallback URLs if local files are missing (Generic alternatives)
+if not img_left:
+    img_left = "https://upload.wikimedia.org/wikipedia/commons/thumb/9/9e/Radha_Krishna.jpg/320px-Radha_Krishna.jpg" # Generic Radha Krishna
+    
+if not img_right:
+    # Use a generic Guru icon or Om symbol as fallback if specific photo is missing
+    img_right = "https://cdn-icons-png.flaticon.com/512/3659/3659973.png" # Generic Guru/Om icon
 
 with header_col1:
-    if os.path.exists(img_left_path):
-        st.image(img_left_path, use_container_width=True)
+    st.image(img_left, use_container_width=True)
 
 with header_col2:
     st.markdown("""
@@ -343,10 +363,19 @@ with header_col2:
     """, unsafe_allow_html=True)
 
 with header_col3:
-    if os.path.exists(img_right_path):
-        st.image(img_right_path, use_container_width=True)
+    st.image(img_right, use_container_width=True)
 
 st.markdown("<style>@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap');</style>", unsafe_allow_html=True)
+
+# Debug Expander (Hidden by default, useful for diagnostics)
+with st.sidebar.expander("🛠️ Debug Deployment", expanded=False):
+    st.write(f"CWD: {os.getcwd()}")
+    st.write(f"Script Dir: {SCRIPT_DIR}")
+    st.write("Files in CWD:", os.listdir('.'))
+    if os.path.exists("static"):
+        st.write("Files in static:", os.listdir('static'))
+    else:
+        st.write("❌ 'static' folder not found!")
 
 # ============================================================
 # GLOBAL TRANSLATE WIDGET
