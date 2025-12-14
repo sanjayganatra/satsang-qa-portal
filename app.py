@@ -320,14 +320,33 @@ st.markdown(CUSTOM_CSS, unsafe_allow_html=True)
 # ============================================================
 # BRANDED HEADER WITH PHOTOS
 # ============================================================
-# Using Streamlit columns for proper image display
+# Using Streamlit columns for proper image display on cloud deployment
 # ============================================================
-# BRANDED HEADER WITH PHOTOS (Base64 Flexbox for Perfect Alignment)
-# ============================================================
-img_left_b64 = get_base64_image("static/radha_krishna.jpg")
-img_right_b64 = get_base64_image("static/vinod_baba.jpg")
+header_col1, header_col2, header_col3 = st.columns([1, 3, 1])
 
-st.markdown(f"""<style>@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap');</style><div style="display: flex; align-items: center; justify-content: space-between; background: transparent; padding: 0; margin-bottom: 2rem; gap: 15px;"><div style="flex: 0 0 auto;"><img src="data:image/jpg;base64,{img_left_b64}" style="height: 110px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.2);"></div><div style="flex: 1; text-align: center; padding: 10px 15px; background: linear-gradient(135deg, rgba(255, 153, 51, 0.95), rgba(139, 0, 0, 0.95)); border-radius: 15px; box-shadow: 0 4px 15px rgba(139, 0, 0, 0.3); color: white; display: flex; align-items: center; justify-content: center; height: 110px;"><p style="margin: 0; font-weight: 700; font-size: 1.35rem; font-family: 'Poppins', sans-serif; letter-spacing: 0.5px; text-shadow: 1px 1px 3px rgba(0,0,0,0.3); line-height: 1.4;">🙏 श्री श्री 108 श्री विनोद बाबाजी महाराज<br><span style="font-size: 1.15rem;">Sri Sri 108 Sri Vinod Baba Ji Maharaj</span></p></div><div style="flex: 0 0 auto;"><img src="data:image/jpg;base64,{img_right_b64}" style="height: 110px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.2);"></div></div>""", unsafe_allow_html=True)
+# Image paths relative to script
+img_left_path = os.path.join(SCRIPT_DIR, "static", "radha_krishna.jpg")
+img_right_path = os.path.join(SCRIPT_DIR, "static", "vinod_baba.jpg")
+
+with header_col1:
+    if os.path.exists(img_left_path):
+        st.image(img_left_path, use_container_width=True)
+
+with header_col2:
+    st.markdown("""
+    <div style="text-align: center; padding: 15px; background: linear-gradient(135deg, rgba(255, 153, 51, 0.95), rgba(139, 0, 0, 0.95)); border-radius: 15px; color: white;">
+        <p style="margin: 0; font-weight: 700; font-size: 1.35rem; font-family: 'Poppins', sans-serif; line-height: 1.4;">
+            श्री श्री 108 श्री विनोद बाबाजी महाराज<br>
+            <span style="font-size: 1.15rem;">Sri Sri 108 Sri Vinod Baba Ji Maharaj</span>
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
+
+with header_col3:
+    if os.path.exists(img_right_path):
+        st.image(img_right_path, use_container_width=True)
+
+st.markdown("<style>@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap');</style>", unsafe_allow_html=True)
 
 # ============================================================
 # GLOBAL TRANSLATE WIDGET
