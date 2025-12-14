@@ -15,7 +15,16 @@ import google.generativeai as genai
 
 import base64
 
+# Get the directory where this script is located
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+
 def get_base64_image(image_path):
+    # Use absolute path relative to script location
+    full_path = os.path.join(SCRIPT_DIR, image_path)
+    if os.path.exists(full_path):
+        with open(full_path, "rb") as img_file:
+            return base64.b64encode(img_file.read()).decode()
+    # Fallback: try original path
     if os.path.exists(image_path):
         with open(image_path, "rb") as img_file:
             return base64.b64encode(img_file.read()).decode()
@@ -1560,8 +1569,8 @@ def render_satsang_page(view_lang):
         text_length = len(text_only)
         
         # Lower multiplier to minimize whitespace
-        # Minimum 400px, Maximum 2500px
-        estimated_height = max(400, min(2500, int(text_length * 0.15)))
+        # Minimum 600px (for image visibility), Maximum 2500px
+        estimated_height = max(600, min(2500, int(text_length * 0.15)))
         
         # 0.15 multiplier with scrolling for overflow
         components.html(raw_content, height=estimated_height, scrolling=True)
